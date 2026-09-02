@@ -1,5 +1,8 @@
-function Home(){
-    return <h1>Welcome to wandr</h1>
+import React from 'react';
+import Hero from '../components/ui/Hero';
+
+function Home() {
+  return <Hero />;
 }
 
 export default Home;

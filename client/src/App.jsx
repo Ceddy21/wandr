@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Header from './components/ui/Header';
 import Home from './pages/Home';
+import Login from './pages/Login';
 
 function App() {
   const [theme, setTheme] = useState(() => {
@@ -25,10 +27,15 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-warm-white dark:bg-dark-bg transition-colors duration-300">
-      <Header theme={theme} toggleTheme={toggleTheme} />
-      <Home />
-    </div>
+    <BrowserRouter>
+      <div className="min-h-screen bg-warm-white dark:bg-dark-bg transition-colors duration-300">
+        <Header theme={theme} toggleTheme={toggleTheme} />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+        </Routes>
+      </div>
+    </BrowserRouter>
   );
 }
 
