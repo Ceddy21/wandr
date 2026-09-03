@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Header from './components/ui/Header';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
 
-function App() {
+function AppContent() {
+  const location = useLocation();
+  const isDashboardPage = location.pathname.startsWith('/dashboard');
+
   const [theme, setTheme] = useState(() => {
     const stored = localStorage.getItem('theme');
     if (stored) return stored;
@@ -27,14 +31,21 @@ function App() {
   };
 
   return (
+    <div className="min-h-screen bg-warm-white dark:bg-dark-bg transition-colors duration-300">
+      {isDashboardPage && <Header theme={theme} toggleTheme={toggleTheme} />}
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login theme={theme} toggleTheme={toggleTheme} />} />
+        <Route path="/signup" element={<Signup theme={theme} toggleTheme={toggleTheme} />} />
+      </Routes>
+    </div>
+  );
+}
+
+function App() {
+  return (
     <BrowserRouter>
-      <div className="min-h-screen bg-warm-white dark:bg-dark-bg transition-colors duration-300">
-        <Header theme={theme} toggleTheme={toggleTheme} />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-        </Routes>
-      </div>
+      <AppContent />
     </BrowserRouter>
   );
 }

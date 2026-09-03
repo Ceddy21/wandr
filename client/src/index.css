@@ -36,4 +36,13 @@
     background-color: #3a2822;
     color: #ebebe6;
   }
+
+  @keyframes float-slow {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-12px); }
+  }
+
+  .animate-float-slow {
+      animation: float-slow 4s ease-in-out infinite;
+  }
 }
