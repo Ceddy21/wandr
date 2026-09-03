@@ -4,6 +4,7 @@ import Header from './components/ui/Header';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import Dashboard from './pages/Dashboard';
 
 function AppContent() {
   const location = useLocation();
@@ -37,6 +38,7 @@ function AppContent() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login theme={theme} toggleTheme={toggleTheme} />} />
         <Route path="/signup" element={<Signup theme={theme} toggleTheme={toggleTheme} />} />
+        <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
     </div>
   );

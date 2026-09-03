@@ -43,7 +43,6 @@ function Signup({ theme, toggleTheme }) {
                 }}
             ></div>
 
-            {/* Decorative Orbs */}
             <div 
                 className="absolute top-20 right-10 w-64 h-64 rounded-full blur-3xl pointer-events-none"
                 style={{
@@ -63,7 +62,6 @@ function Signup({ theme, toggleTheme }) {
                 aria-hidden="true"
             ></div>
 
-            {/* Theme Toggle */}
             <button
                 onClick={toggleTheme}
                 className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 rounded-full bg-terracotta-soft dark:bg-dark-terracotta-soft text-terracotta dark:text-dark-terracotta hover:bg-terracotta hover:text-white dark:hover:bg-dark-terracotta dark:hover:text-dark-bg transition-colors duration-300 z-20"
@@ -96,7 +94,6 @@ function Signup({ theme, toggleTheme }) {
                     }}
                 ></div>
 
-                {/* Logo */}
                 <div className="flex flex-col items-center mb-6 relative z-10">
                     <div className="p-2.5 rounded-full bg-gradient-to-br from-[#2D6A4F] to-[#E76F51] text-white shadow-lg shadow-terracotta/20 dark:shadow-dark-terracotta/20 hover:scale-105 transition-transform duration-300">
                         <Plane className="w-5 h-5" />
@@ -106,7 +103,6 @@ function Signup({ theme, toggleTheme }) {
                     </span>
                 </div>
 
-                {/* Heading */}
                 <div className="flex items-center justify-center gap-2 mb-1 relative z-10">
                     <Hand className="w-6 h-6 text-terracotta dark:text-dark-terracotta" />
                     <h2 className="text-2xl font-bold text-center text-deep-charcoal dark:text-dark-text">
@@ -118,7 +114,6 @@ function Signup({ theme, toggleTheme }) {
                     Start planning your trips with friends.
                 </p>
 
-                {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
                     {error && (
                         <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
@@ -126,7 +121,6 @@ function Signup({ theme, toggleTheme }) {
                         </div>
                     )}
 
-                    {/* Full Name */}
                     <div>
                         <label htmlFor="name" className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
                             Full Name
@@ -139,7 +133,6 @@ function Signup({ theme, toggleTheme }) {
                         />
                     </div>
 
-                    {/* Email */}
                     <div>
                         <label htmlFor="email" className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
                             Email
@@ -152,7 +145,6 @@ function Signup({ theme, toggleTheme }) {
                         />
                     </div>
 
-                    {/* Password */}
                     <div>
                         <label htmlFor="password" className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
                             Password
@@ -175,7 +167,6 @@ function Signup({ theme, toggleTheme }) {
                         </div>
                     </div>
 
-                    {/* Confirm Password */}
                     <div>
                         <label htmlFor="confirmPassword" className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
                             Confirm Password
@@ -198,7 +189,6 @@ function Signup({ theme, toggleTheme }) {
                         </div>
                     </div>
 
-                    {/* Submit Button */}
                     <button
                         type="submit"
                         disabled={isLoading}
@@ -226,7 +216,6 @@ function Signup({ theme, toggleTheme }) {
                     </div>
                 </div>
 
-                {/* Login Link */}
                 <div className="mt-4 text-center relative z-10">
                     <a href="/login" className="text-terracotta dark:text-dark-terracotta font-medium hover:underline hover:text-terracotta-hover dark:hover:text-[#c47050] transition-colors">
                         Log in
