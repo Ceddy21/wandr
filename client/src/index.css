@@ -45,4 +45,39 @@
   .animate-float-slow {
       animation: float-slow 4s ease-in-out infinite;
   }
+
+  .rbc-calendar {
+    background-color: transparent;
+    color: #1c1c1a;
+  }
+
+  .dark .rbc-calendar {
+    color: #ebebe6;
+  }
+
+  .dark .rbc-header {
+    color: #b5b5ae;
+  }
+
+  .dark .rbc-today {
+    background-color: rgba(196, 106, 77, 0.08);
+  }
+
+  .dark .rbc-off-range-bg {
+    background-color: rgba(255, 255, 255, 0.03);
+  }
+
+  .rbc-event {
+    background-color: transparent;
+    border: none;
+  }
+
+  .rbc-event-content {
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .rbc-event-label {
+    display: none;
+  }
 }

@@ -5,10 +5,12 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
+import CalendarPage from './pages/Calendar';
+import TripDetail from './pages/TripDetail';
 
 function AppContent() {
   const location = useLocation();
-  const isDashboardPage = location.pathname.startsWith('/dashboard');
+  const isDashboardPage = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/calendar') || location.pathname.startsWith('/trip') ;
 
   const [theme, setTheme] = useState(() => {
     const stored = localStorage.getItem('theme');
@@ -39,6 +41,8 @@ function AppContent() {
         <Route path="/login" element={<Login theme={theme} toggleTheme={toggleTheme} />} />
         <Route path="/signup" element={<Signup theme={theme} toggleTheme={toggleTheme} />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/trip/:id" element={<TripDetail />} />
       </Routes>
     </div>
   );
