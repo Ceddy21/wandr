@@ -141,7 +141,7 @@ function CreateTripModal({ isOpen, onClose, onSubmit, newTrip, setNewTrip }) {
   };
 
   const handleSubmit = () => {
-    if (!newTrip.destination || !newTrip.startDate || !newTrip.endDate) {
+    if (!newTrip.name || !newTrip.destination || !newTrip.startDate || !newTrip.endDate) {
       setDateError('Please fill in all required fields.');
       return;
     }
@@ -185,6 +185,26 @@ function CreateTripModal({ isOpen, onClose, onSubmit, newTrip, setNewTrip }) {
         )}
 
         <div className="space-y-4">
+          <div>
+            <label
+              htmlFor="tripName"
+              className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5"
+            >
+              Trip Name
+            </label>
+            <input
+              type="text"
+              id="tripName"
+              placeholder="e.g. Bora 2025 with Friends"
+              value={newTrip.name || ''}
+              onChange={(e) => {
+                setNewTrip({ ...newTrip, name: e.target.value });
+                setDateError('');
+              }}
+              className="w-full px-4 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text placeholder:text-warm-grey/60 dark:placeholder:text-dark-text-secondary/60 focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] focus:border-transparent transition-all duration-200"
+            />
+          </div>
+
           <div className="relative" ref={dropdownRef}>
             <label
               htmlFor="destination"

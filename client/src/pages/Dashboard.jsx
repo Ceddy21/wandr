@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
-import { Plus, Search, Filter, Users, Calendar, Clock, CheckCircle, Plane, User, Activity, Loader, ArrowUpRight, MapPin, Calendar as CalendarIcon, Users as UsersIcon, ArrowRight, ChevronDown, Sparkles, Eye, Grid3x3, List, X, Archive, Trash2 } from 'lucide-react';
+import { Plus, Search, Filter, Users, Calendar, Clock, CheckCircle, Plane, User, Activity, Loader, ArrowUpRight, MapPin, Calendar as CalendarIcon, Users as UsersIcon, ArrowRight, ChevronDown, Sparkles, Eye, Grid3x3, List, X, Archive, Trash2, DollarSign, UserPlus, FileText } from 'lucide-react';
 import CreateTripModal from '../components/ui/CreateTripModal';
 
 function Dashboard() {
-  // ---- State ----
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -19,7 +18,6 @@ function Dashboard() {
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // ---- Create trip modal state ----
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newTrip, setNewTrip] = useState({
     destination: '',
@@ -28,9 +26,10 @@ function Dashboard() {
     members: 1
   });
 
+  const [recentActivities, setRecentActivities] = useState([]);
+
   const pageSize = 6;
 
-  // ---- Handlers ----
   const handleCreateTrip = () => {
     setIsCreateModalOpen(true);
   };
@@ -43,7 +42,6 @@ function Dashboard() {
     setIsModalOpen(true);
   };
 
-  // ---- Submit new trip ----
   const handleSubmitNewTrip = () => {
     if (!newTrip.destination || !newTrip.startDate || !newTrip.endDate) {
       toast.error('Please fill in all required fields.');
@@ -52,6 +50,7 @@ function Dashboard() {
 
     const newTripData = {
       id: trips.length + 1,
+      name: newTrip.destination,
       destination: newTrip.destination,
       startDate: newTrip.startDate,
       endDate: newTrip.endDate,
@@ -96,6 +95,7 @@ function Dashboard() {
 
       const dummyTrip = {
         id: 1,
+        name: "Bora 2025 with Friends",
         destination: "Boracay, Philippines",
         startDate: "2025-05-10",
         endDate: "2025-05-15",
@@ -113,6 +113,83 @@ function Dashboard() {
 
     fetchTrips();
   }, []);
+
+  useEffect(() => {
+    const fetchRecentActivities = async () => {
+      try {
+        // --- REPLACE WITH REAL API CALL ---
+        // const response = await fetch('/api/activities/recent?limit=3');
+        // const data = await response.json();
+        // setRecentActivities(data);
+
+        // --- MOCK DATA (temporary) ---
+        const mockActivities = [
+          {
+            id: 1,
+            type: 'expense_added',
+            user: { name: 'Maya' },
+            trip: { name: 'Bora 2025 with Friends' },
+            description: 'added ₱500 for food',
+            createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+          },
+          {
+            id: 2,
+            type: 'member_added',
+            user: { name: 'Alex' },
+            trip: { name: 'Bora 2025 with Friends' },
+            description: 'added Sophie to the trip',
+            createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+          },
+          {
+            id: 3,
+            type: 'activity_added',
+            user: { name: 'Sophie' },
+            trip: { name: 'Siargao Surf Trip' },
+            description: 'added "Surfing Lesson" to itinerary',
+            createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+          },
+        ];
+        setRecentActivities(mockActivities);
+      } catch (err) {
+        console.error('Failed to fetch recent activities:', err);
+      }
+    };
+    fetchRecentActivities();
+  }, []);
+
+  const getActivityIcon = (type) => {
+    switch (type) {
+      case 'expense_added': return <DollarSign className="w-4 h-4" />;
+      case 'member_added': return <UserPlus className="w-4 h-4" />;
+      case 'activity_added': return <MapPin className="w-4 h-4" />;
+      case 'trip_created': return <Activity className="w-4 h-4" />;
+      case 'poll_created': return <FileText className="w-4 h-4" />;
+      default: return <Activity className="w-4 h-4" />;
+    }
+  };
+
+  const getActivityColor = (type) => {
+    switch (type) {
+      case 'expense_added': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+      case 'member_added': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+      case 'activity_added': return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
+      case 'trip_created': return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
+      case 'poll_created': return 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400';
+      default: return 'bg-gray-100 text-gray-700 dark:bg-gray-800/30 dark:text-gray-400';
+    }
+  };
+
+  const formatTime = (date) => {
+    const diff = Date.now() - new Date(date).getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
 
   const filteredTrips = trips.filter((trip) => {
     const matchesSearch = trip.destination
@@ -323,7 +400,7 @@ function Dashboard() {
               <div>
                 <p className="text-xs font-medium text-terracotta dark:text-dark-terracotta uppercase tracking-wider">Next Up</p>
                 <h3 className="text-lg sm:text-xl font-serif font-semibold text-deep-charcoal dark:text-dark-text">
-                  {nextTrip.destination}
+                  {nextTrip.name || nextTrip.destination}
                 </h3>
                 <p className="text-sm text-warm-grey dark:text-dark-text-secondary flex items-center gap-2">
                   <CalendarIcon className="w-3 h-3" />
@@ -442,7 +519,7 @@ function Dashboard() {
                     <div>
                       <a href={`/trip/${trip.id}`}>
                         <h3 className="font-serif text-lg font-semibold text-deep-charcoal dark:text-dark-text group-hover:text-terracotta dark:group-hover:text-dark-terracotta transition-colors">
-                          {trip.destination}
+                          {trip.name || trip.destination}
                         </h3>
                       </a>
                       <p className="text-sm text-warm-grey dark:text-dark-text-secondary mt-1 flex items-center gap-1">
@@ -559,18 +636,51 @@ function Dashboard() {
       )}
 
       <div className="mt-8 border-t border-[#e8eaed] dark:border-dark-border pt-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-deep-charcoal dark:text-dark-text flex items-center gap-2">
             <Activity className="w-5 h-5 text-terracotta dark:text-dark-terracotta" />
             Recent Activity
           </h2>
-          <button className="text-sm text-terracotta dark:text-dark-terracotta hover:underline">
-            View All
-          </button>
+          <a
+            href="/activity"
+            className="text-sm text-terracotta dark:text-dark-terracotta hover:underline flex items-center gap-1"
+          >
+            View All →
+          </a>
         </div>
-        <div className="mt-4 text-center text-warm-grey dark:text-dark-text-secondary py-8">
-          <p>No recent activity yet.</p>
-        </div>
+
+        {recentActivities.length > 0 ? (
+          <div className="space-y-3">
+            {recentActivities.slice(0, 3).map(activity => (
+              <div
+                key={activity.id}
+                className="flex items-center gap-3 p-3 bg-white dark:bg-dark-card border border-[#e8eaed] dark:border-dark-border rounded-lg hover:border-terracotta/30 dark:hover:border-dark-terracotta/30 transition-colors"
+              >
+                <div className={`p-2 rounded-lg ${getActivityColor(activity.type)}`}>
+                  {getActivityIcon(activity.type)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-deep-charcoal dark:text-dark-text truncate">
+                    <strong className="font-medium">{activity.user.name}</strong>
+                    {' '}
+                    {activity.description}
+                    {' '}
+                    <span className="text-terracotta dark:text-dark-terracotta font-medium">
+                      {activity.trip.name}
+                    </span>
+                  </p>
+                  <p className="text-xs text-warm-grey dark:text-dark-text-secondary">
+                    {formatTime(activity.createdAt)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center text-warm-grey dark:text-dark-text-secondary py-8">
+            <p>No recent activity yet.</p>
+          </div>
+        )}
       </div>
 
       {isModalOpen && selectedTrip && (
@@ -590,7 +700,7 @@ function Dashboard() {
                 </span>
               </div>
               <h3 className="text-2xl font-serif font-bold text-deep-charcoal dark:text-dark-text">
-                {selectedTrip.destination}
+                {selectedTrip.name || selectedTrip.destination}
               </h3>
               <p className="text-sm text-warm-grey dark:text-dark-text-secondary flex items-center gap-2">
                 <CalendarIcon className="w-4 h-4" />

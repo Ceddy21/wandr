@@ -7,10 +7,20 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import CalendarPage from './pages/Calendar';
 import TripDetail from './pages/TripDetail';
+import TripList from './pages/TripList';
+import ProfilePage from './pages/Profile';
+import RecentActivity from './pages/RecentActivity';
+import Notifications from './pages/Notifications';
 
 function AppContent() {
   const location = useLocation();
-  const isDashboardPage = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/calendar') || location.pathname.startsWith('/trip') ;
+  const isDashboardPage = location.pathname.startsWith('/dashboard') || 
+                          location.pathname.startsWith('/calendar') ||
+                          location.pathname.startsWith('/trip') ||
+                          location.pathname.startsWith('/trips') ||
+                          location.pathname.startsWith('/profile') ||
+                          location.pathname.startsWith('/activity') ||
+                          location.pathname.startsWith('/notifications');
 
   const [theme, setTheme] = useState(() => {
     const stored = localStorage.getItem('theme');
@@ -43,6 +53,10 @@ function AppContent() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/trip/:id" element={<TripDetail />} />
+        <Route path="/trips" element={<TripList />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/activity" element={<RecentActivity />} />
+        <Route path="/notifications" element={<Notifications />} />
       </Routes>
     </div>
   );
