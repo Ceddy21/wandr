@@ -1,20 +1,73 @@
 import React, { useState } from 'react';
 import { Plane, Eye, EyeOff, Hand, Sun, Moon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 function Login({ theme, toggleTheme }) {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const navigate = useNavigate();
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    setTimeout(() => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      console.log('Login successful!', data.user);
+      
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
+      navigate('/dashboard');
+      
+    } catch (err) {
+      setError(err.message);
+    } finally {
       setIsLoading(false);
-      console.log('Login attempted');
-    }, 1500);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setError('');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/google/url`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to get Google auth URL');
+      }
+      window.location.href = data.url;
+      
+    } catch (err) {
+      setError(err.message);
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -40,6 +93,7 @@ function Login({ theme, toggleTheme }) {
             : 'linear-gradient(180deg, rgba(247,247,245,0.3), rgba(247,247,245,0.5))'
         }}
       ></div>
+
       <div 
         className="absolute top-20 right-10 w-64 h-64 rounded-full blur-3xl pointer-events-none"
         style={{
@@ -49,6 +103,7 @@ function Login({ theme, toggleTheme }) {
         }}
         aria-hidden="true"
       ></div>
+
       <div 
         className="absolute bottom-20 left-10 w-48 h-48 rounded-full blur-3xl pointer-events-none"
         style={{
@@ -107,7 +162,7 @@ function Login({ theme, toggleTheme }) {
             <Plane className="w-5 h-5" />
           </div>
           <span className="font-serif text-2xl font-bold text-[#1A1A1A] dark:text-dark-text mt-2">
-            Wanderly
+            Wandr
           </span>
         </div>
 
@@ -137,7 +192,10 @@ function Login({ theme, toggleTheme }) {
               id="email"
               type="email"
               placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white/80 dark:bg-dark-card/80 text-deep-charcoal dark:text-dark-text placeholder:text-warm-grey/60 dark:placeholder:text-dark-text-secondary/60 focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] focus:border-transparent transition-all duration-200"
+              required
             />
           </div>
 
@@ -150,7 +208,10 @@ function Login({ theme, toggleTheme }) {
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-2.5 pr-12 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white/80 dark:bg-dark-card/80 text-deep-charcoal dark:text-dark-text placeholder:text-warm-grey/60 dark:placeholder:text-dark-text-secondary/60 focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] focus:border-transparent transition-all duration-200"
+                required
               />
               <button
                 type="button"
@@ -185,10 +246,26 @@ function Login({ theme, toggleTheme }) {
           </div>
           <div className="relative flex justify-center text-sm">
             <span className="px-4 bg-transparent text-warm-grey dark:text-dark-text-secondary">
-              Don't have an account?
+              or continue with
             </span>
           </div>
         </div>
+
+        <button
+          onClick={handleGoogleLogin}
+          disabled={isLoading}
+          className="mt-4 w-full py-3 flex items-center justify-center gap-3 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white/80 dark:bg-dark-card/80 hover:bg-white dark:hover:bg-dark-card transition-all duration-300 hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
+        >
+          <svg className="w-5 h-5" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+          <span className="text-sm font-medium text-deep-charcoal dark:text-dark-text">
+            Continue with Google
+          </span>
+        </button>
 
         <div className="mt-4 text-center relative z-10">
           <a href="/signup" className="text-terracotta dark:text-dark-terracotta font-medium hover:underline hover:text-terracotta-hover dark:hover:text-[#c47050] transition-colors">

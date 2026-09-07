@@ -11,6 +11,8 @@ import TripList from './pages/TripList';
 import ProfilePage from './pages/Profile';
 import RecentActivity from './pages/RecentActivity';
 import Notifications from './pages/Notifications';
+import GoogleCallback from './pages/GoogleCallback';
+import Verify from './pages/Verify';
 
 function AppContent() {
   const location = useLocation();
@@ -57,6 +59,8 @@ function AppContent() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/activity" element={<RecentActivity />} />
         <Route path="/notifications" element={<Notifications />} />
+        <Route path="/google-callback" element={<GoogleCallback />} />
+        <Route path="/verify" element={<Verify theme={theme} toggleTheme={toggleTheme} />} />
       </Routes>
     </div>
   );

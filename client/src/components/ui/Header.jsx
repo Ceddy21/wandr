@@ -1,11 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Plane, Sun, Moon, User, LogOut, Menu, X, Compass, Activity, LayoutDashboard } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import NotificationBell from './NotificationBell';
 
 function Header({ theme, toggleTheme }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const dropdownRef = useRef(null);
+  const navigate = useNavigate();
+
   const [user, setUser] = useState(() => {
     const stored = localStorage.getItem('user');
     if (stored) {
@@ -17,6 +21,8 @@ function Header({ theme, toggleTheme }) {
     }
     return null;
   });
+
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
     const handleProfileUpdate = (event) => {
@@ -63,10 +69,32 @@ function Header({ theme, toggleTheme }) {
     setIsDropdownOpen(!isDropdownOpen);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
-    console.log('Logging out...');
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+
+    try {
+      await fetch(`${API_BASE_URL}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      localStorage.removeItem('user');
+      localStorage.removeItem('pendingVerificationEmail');
+
+      setUser(null);
+      setIsDropdownOpen(false);
+
+      navigate('/login');
+
+    } catch (error) {
+      console.error('Logout error:', error);
+      localStorage.removeItem('user');
+      localStorage.removeItem('pendingVerificationEmail');
+      setUser(null);
+      navigate('/login');
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const getUserInitials = () => {
@@ -152,10 +180,11 @@ function Header({ theme, toggleTheme }) {
                 </a>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-3 px-4 py-3 text-sm text-[#1A1A1A] dark:text-dark-text hover:bg-[#F0F2F5] dark:hover:bg-dark-card/50 transition-colors duration-150 w-full text-left border-t border-[#e8eaed] dark:border-dark-border"
+                  disabled={isLoggingOut}
+                  className="flex items-center gap-3 px-4 py-3 text-sm text-[#1A1A1A] dark:text-dark-text hover:bg-[#F0F2F5] dark:hover:bg-dark-card/50 transition-colors duration-150 w-full text-left border-t border-[#e8eaed] dark:border-dark-border disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <LogOut className="w-4 h-4 text-[#2D6A4F] dark:text-[#E76F51]" />
-                  Logout
+                  {isLoggingOut ? 'Logging out...' : 'Logout'}
                 </button>
               </div>
             )}
@@ -223,14 +252,12 @@ function Header({ theme, toggleTheme }) {
             Profile
           </a>
           <button
-            onClick={() => {
-              handleLogout();
-              setIsMobileMenuOpen(false);
-            }}
-            className="flex items-center gap-3 py-3 px-2 text-sm font-medium text-[#4A4A4A] dark:text-dark-text-secondary hover:text-[#E76F51] hover:bg-[#F0F2F5] dark:hover:bg-dark-card/50 rounded-lg transition-all duration-150 w-full text-left"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="flex items-center gap-3 py-3 px-2 text-sm font-medium text-[#4A4A4A] dark:text-dark-text-secondary hover:text-[#E76F51] hover:bg-[#F0F2F5] dark:hover:bg-dark-card/50 rounded-lg transition-all duration-150 w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <LogOut className="w-4 h-4" />
-            Logout
+            {isLoggingOut ? 'Logging out...' : 'Logout'}
           </button>
         </div>
       )}
