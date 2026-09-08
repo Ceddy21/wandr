@@ -1,4 +1,7 @@
 import { google } from 'googleapis';
+import dotenv from "dotenv";
+
+dotenv.config({ path: './.env' });
 
 const CLIENT_ID = process.env.GMAIL_CLIENT_ID;
 const CLIENT_SECRET = process.env.GMAIL_CLIENT_SECRET;

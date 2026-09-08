@@ -11,6 +11,14 @@ function CreateTripModal({ isOpen, onClose, onSubmit, newTrip, setNewTrip }) {
   const searchTimeout = useRef(null);
   const dropdownRef = useRef(null);
 
+  const [membersInput, setMembersInput] = useState('1');
+
+  useEffect(() => {
+    if (isOpen) {
+      setMembersInput(String(newTrip.members || 1));
+    }
+  }, [isOpen, newTrip.members]);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -108,6 +116,7 @@ function CreateTripModal({ isOpen, onClose, onSubmit, newTrip, setNewTrip }) {
       setSuggestions([]);
       setIsDropdownOpen(false);
       setDateError('');
+      setMembersInput('1');
     }
   }, [isOpen]);
 
@@ -146,6 +155,13 @@ function CreateTripModal({ isOpen, onClose, onSubmit, newTrip, setNewTrip }) {
       return;
     }
 
+    const parsedMembers = parseInt(membersInput, 10);
+    if (isNaN(parsedMembers) || parsedMembers < 1) {
+      setDateError('Members must be at least 1.');
+      return;
+    }
+    setNewTrip({ ...newTrip, members: parsedMembers });
+
     if (!validateDates()) {
       return;
     }
@@ -156,6 +172,30 @@ function CreateTripModal({ isOpen, onClose, onSubmit, newTrip, setNewTrip }) {
   const handleDateChange = (field, value) => {
     setNewTrip({ ...newTrip, [field]: value });
     setDateError('');
+  };
+
+  const handleNameChange = (e) => {
+    setNewTrip({ ...newTrip, name: e.target.value });
+    setDateError('');
+  };
+
+  const handleMembersChange = (e) => {
+    const value = e.target.value;
+    // Allow only digits
+    if (value === '' || /^\d+$/.test(value)) {
+      setMembersInput(value);
+      setDateError('');
+    }
+  };
+
+  const handleMembersBlur = () => {
+    if (membersInput === '' || parseInt(membersInput, 10) < 1) {
+      setMembersInput('1');
+      setNewTrip({ ...newTrip, members: 1 });
+    } else {
+      const num = parseInt(membersInput, 10);
+      setNewTrip({ ...newTrip, members: num });
+    }
   };
 
   if (!isOpen) return null;
@@ -185,6 +225,7 @@ function CreateTripModal({ isOpen, onClose, onSubmit, newTrip, setNewTrip }) {
         )}
 
         <div className="space-y-4">
+
           <div>
             <label
               htmlFor="tripName"
@@ -197,10 +238,7 @@ function CreateTripModal({ isOpen, onClose, onSubmit, newTrip, setNewTrip }) {
               id="tripName"
               placeholder="e.g. Bora 2025 with Friends"
               value={newTrip.name || ''}
-              onChange={(e) => {
-                setNewTrip({ ...newTrip, name: e.target.value });
-                setDateError('');
-              }}
+              onChange={handleNameChange}
               className="w-full px-4 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text placeholder:text-warm-grey/60 dark:placeholder:text-dark-text-secondary/60 focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] focus:border-transparent transition-all duration-200"
             />
           </div>
@@ -288,15 +326,15 @@ function CreateTripModal({ isOpen, onClose, onSubmit, newTrip, setNewTrip }) {
               Number of Members
             </label>
             <input
-              type="number"
+              type="text" 
               id="members"
-              min="1"
-              value={newTrip.members}
-              onChange={(e) => {
-                setNewTrip({ ...newTrip, members: parseInt(e.target.value, 10) || 1 });
-                setDateError('');
-              }}
-              className="w-full px-4 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] focus:border-transparent transition-all duration-200"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              placeholder="1"
+              value={membersInput}
+              onChange={handleMembersChange}
+              onBlur={handleMembersBlur}
+              className="w-full px-4 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text placeholder:text-warm-grey/60 dark:placeholder:text-dark-text-secondary/60 focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] focus:border-transparent transition-all duration-200"
             />
           </div>
 
@@ -314,6 +352,7 @@ function CreateTripModal({ isOpen, onClose, onSubmit, newTrip, setNewTrip }) {
               Create Trip
             </button>
           </div>
+
         </div>
       </div>
     </div>

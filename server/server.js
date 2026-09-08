@@ -13,6 +13,8 @@ import morgan from 'morgan';
 dotenv.config({ path: './.env' });
 
 import authRoutes from './src/routes/authRoutes.js';
+import tripRoutes from './src/routes/tripRoutes.js';
+import activityRoutes from './src/routes/activityRoutes.js';
 
 const requiredEnvVars = [
     'PORT',
@@ -62,7 +64,6 @@ app.use(helmet({
 }));
 
 app.use(compression());
-
 app.use(morgan('combined'));
 
 app.use(cors({
@@ -104,6 +105,8 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/trips', tripRoutes);
+app.use('/api/activities', activityRoutes);
 
 app.use((req, res) => {
     res.status(404).json({
