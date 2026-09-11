@@ -1,7 +1,74 @@
-import React from 'react';
-import { X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { X, Clock } from 'lucide-react';
 
-export const AddActivityModal = ({ isOpen, onClose, newActivity, setNewActivity, onAdd }) => {
+const DEFAULT_ACTIVITY = {
+  day: 1,
+  time: '9:00 AM',
+  title: '',
+  type: 'activity',
+};
+
+const to24Hour = (time12) => {
+  if (!time12) return '';
+
+  const hhmm = time12.match(/^(\d{1,2}):(\d{2})/);
+  if (hhmm && !/AM|PM/i.test(time12)) {
+    return `${String(hhmm[1]).padStart(2, '0')}:${hhmm[2]}`;
+  }
+
+  const match = time12.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) return '';
+
+  let hour = parseInt(match[1], 10);
+  const minute = match[2];
+  const period = match[3].toUpperCase();
+
+  if (period === 'PM' && hour !== 12) hour += 12;
+  if (period === 'AM' && hour === 12) hour = 0;
+
+  return `${String(hour).padStart(2, '0')}:${minute}`;
+};
+
+const to12Hour = (time24) => {
+  if (!time24) return '';
+
+  if (/AM|PM/i.test(time24)) return time24;
+
+  const trimmed = time24.slice(0, 5);
+  const [hourStr, minute] = trimmed.split(':');
+  let hour = parseInt(hourStr, 10);
+  const period = hour >= 12 ? 'PM' : 'AM';
+
+  if (hour === 0) hour = 12;
+  else if (hour > 12) hour -= 12;
+
+  return `${hour}:${minute} ${period}`;
+};
+
+export const AddActivityModal = ({
+  isOpen,
+  onClose,
+  newActivity,                         
+  setNewActivity,                       
+  onAdd,
+}) => {
+  const safeActivity = newActivity || DEFAULT_ACTIVITY;
+  const safeSetActivity = setNewActivity || (() => {});
+
+  const [timeValue, setTimeValue] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setTimeValue(to24Hour(safeActivity.time));
+    }
+  }, [isOpen, safeActivity.time]);
+
+  const handleTimeChange = (e) => {
+    const val = e.target.value;
+    setTimeValue(val);
+    safeSetActivity({ ...safeActivity, time: to12Hour(val) });
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -13,47 +80,75 @@ export const AddActivityModal = ({ isOpen, onClose, newActivity, setNewActivity,
         >
           <X className="w-5 h-5 text-deep-charcoal dark:text-dark-text" />
         </button>
-        <h2 className="text-2xl font-serif font-bold text-deep-charcoal dark:text-dark-text mb-2">Add Activity</h2>
-        <p className="text-sm text-warm-grey dark:text-dark-text-secondary mb-6">Add a new activity to your itinerary.</p>
+
+        <h2 className="text-2xl font-serif font-bold text-deep-charcoal dark:text-dark-text mb-2">
+          Add Activity
+        </h2>
+        <p className="text-sm text-warm-grey dark:text-dark-text-secondary mb-6">
+          Add a new activity to your itinerary.
+        </p>
+
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">Day</label>
+            <label className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
+              Day
+            </label>
             <select
-              value={newActivity.day}
-              onChange={(e) => setNewActivity({ ...newActivity, day: parseInt(e.target.value) })}
-              className="w-full px-4 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] transition-all duration-200"
+              value={safeActivity.day}
+              onChange={(e) =>
+                safeSetActivity({
+                  ...safeActivity,
+                  day: parseInt(e.target.value),
+                })
+              }
+              className="w-full px-4 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-[#2D6A4F]"
             >
               {[...Array(7)].map((_, i) => (
-                <option key={i} value={i + 1}>Day {i + 1}</option>
+                <option key={i} value={i + 1}>
+                  Day {i + 1}
+                </option>
               ))}
             </select>
           </div>
+
           <div>
-            <label className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">Time</label>
+            <label className="flex items-center gap-1.5 text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
+              <Clock className="w-4 h-4" /> Time
+            </label>
             <input
-              type="text"
-              placeholder="9:00 AM"
-              value={newActivity.time}
-              onChange={(e) => setNewActivity({ ...newActivity, time: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text placeholder:text-warm-grey/60 dark:placeholder:text-dark-text-secondary/60 focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] focus:border-transparent transition-all duration-200"
+              type="time"
+              step="60"
+              value={timeValue}
+              onChange={handleTimeChange}
+              className="w-full px-4 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] [color-scheme:light] dark:[color-scheme:dark]"
             />
           </div>
+
           <div>
-            <label className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">Activity Title</label>
+            <label className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
+              Activity Title
+            </label>
             <input
               type="text"
               placeholder="e.g. Beach Tour"
-              value={newActivity.title}
-              onChange={(e) => setNewActivity({ ...newActivity, title: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text placeholder:text-warm-grey/60 dark:placeholder:text-dark-text-secondary/60 focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] focus:border-transparent transition-all duration-200"
+              value={safeActivity.title}
+              onChange={(e) =>
+                safeSetActivity({ ...safeActivity, title: e.target.value })
+              }
+              className="w-full px-4 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text placeholder:text-warm-grey/60 focus:outline-none focus:ring-2 focus:ring-[#2D6A4F]"
             />
           </div>
+
           <div>
-            <label className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">Type</label>
+            <label className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
+              Type
+            </label>
             <select
-              value={newActivity.type}
-              onChange={(e) => setNewActivity({ ...newActivity, type: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] transition-all duration-200"
+              value={safeActivity.type}
+              onChange={(e) =>
+                safeSetActivity({ ...safeActivity, type: e.target.value })
+              }
+              className="w-full px-4 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-[#2D6A4F]"
             >
               <option value="flight">Flight</option>
               <option value="hotel">Hotel</option>
@@ -61,6 +156,8 @@ export const AddActivityModal = ({ isOpen, onClose, newActivity, setNewActivity,
               <option value="activity">Activity</option>
             </select>
           </div>
+
+          {/* Actions */}
           <div className="flex items-center justify-end gap-3 mt-6">
             <button
               onClick={onClose}
@@ -70,7 +167,7 @@ export const AddActivityModal = ({ isOpen, onClose, newActivity, setNewActivity,
             </button>
             <button
               onClick={onAdd}
-              className="px-4 py-2 bg-terracotta dark:bg-dark-terracotta text-white rounded-lg hover:bg-terracotta-hover dark:hover:bg-[#c47050] transition-colors"
+              className="px-4 py-2 bg-terracotta text-white rounded-lg hover:bg-terracotta-hover transition-colors"
             >
               Add Activity
             </button>
@@ -80,3 +177,5 @@ export const AddActivityModal = ({ isOpen, onClose, newActivity, setNewActivity,
     </div>
   );
 };
+
+export default AddActivityModal;

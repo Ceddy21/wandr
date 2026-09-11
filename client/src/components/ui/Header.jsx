@@ -1,5 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plane, Sun, Moon, User, LogOut, Menu, X, Compass, Activity, LayoutDashboard } from 'lucide-react';
+import {
+  Plane,
+  Sun,
+  Moon,
+  User,
+  LogOut,
+  Menu,
+  X,
+  Compass,
+  Activity,
+  LayoutDashboard,
+  Archive,       
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import NotificationBell from './NotificationBell';
 
@@ -85,7 +97,6 @@ function Header({ theme, toggleTheme }) {
       setIsDropdownOpen(false);
 
       navigate('/login');
-
     } catch (error) {
       console.error('Logout error:', error);
       localStorage.removeItem('user');
@@ -144,6 +155,13 @@ function Header({ theme, toggleTheme }) {
           >
             <Activity className="w-4 h-4" />
             Activity
+          </a>
+          <a
+            href="/archive"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-[#4A4A4A] dark:text-dark-text-secondary hover:text-[#2D6A4F] dark:hover:text-[#E76F51] hover:bg-[#F0F2F5] dark:hover:bg-dark-card/50 transition-all duration-200"
+          >
+            <Archive className="w-4 h-4" />
+            Archive
           </a>
         </div>
 
@@ -242,6 +260,14 @@ function Header({ theme, toggleTheme }) {
           >
             <Activity className="w-4 h-4" />
             Activity
+          </a>
+          <a
+            href="/archive"
+            className="flex items-center gap-3 py-3 px-2 text-sm font-medium text-[#4A4A4A] dark:text-dark-text-secondary hover:text-[#2D6A4F] dark:hover:text-[#E76F51] hover:bg-[#F0F2F5] dark:hover:bg-dark-card/50 rounded-lg transition-all duration-150"
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            <Archive className="w-4 h-4" />
+            Archive
           </a>
           <a
             href="/profile"

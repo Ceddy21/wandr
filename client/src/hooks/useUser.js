@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { authService } from '../services/authService';
 
 export const useUser = () => {
+  const [user, setUser] = useState(null);
   const [userName, setUserName] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -10,7 +11,8 @@ export const useUser = () => {
     const fetchUser = async () => {
       try {
         const data = await authService.getMe();
-        setUserName(data.user.name || 'User');
+        setUser(data.user);
+        setUserName(data.user?.name || 'User');
       } catch (err) {
         console.error('Failed to fetch user:', err);
         setError(err.message);
@@ -22,5 +24,10 @@ export const useUser = () => {
     fetchUser();
   }, []);
 
-  return { userName, loading, error };
+  return {
+    user,        
+    userName,   
+    loading,
+    error,
+  };
 };

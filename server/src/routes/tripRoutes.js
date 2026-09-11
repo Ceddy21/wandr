@@ -1,23 +1,85 @@
 import express from 'express';
 import { protect } from '../middleware/auth.js';
+
 import {
   getTrip,
   getTrips,
   createTrip,
   deleteTrip,
-  archiveTrip
+  archiveTrip,
+  unarchiveTrip,
+  addMember,
+  removeMember,
 } from '../controllers/tripController.js';
+
+import {
+  getMessages,
+  addMessage,
+  editMessage,
+  deleteMessage,
+  markMessagesRead,
+} from '../controllers/messageController.js';
+
+import {
+  getPolls,
+  addPoll,
+  deletePoll,
+  addPollChoice,
+  deletePollChoice,
+  votePoll,
+} from '../controllers/pollController.js';
+
+import {
+  getItinerary,
+  addItinerary,
+  updateItinerary,
+  deleteItinerary,
+} from '../controllers/itineraryController.js';
+
+import {
+  getExpenses,
+  addExpense,
+  updateExpense,
+  deleteExpense,
+} from '../controllers/expenseController.js';
 
 const router = express.Router();
 
-router.route('/')
-  .get(protect, getTrips)
-  .post(protect, createTrip);
-
-router.route('/:id')
-  .get(protect, getTrip)
-  .delete(protect, deleteTrip);
-
+// ─── Trip CRUD ────────────────────────────────────────────
+router.route('/').get(protect, getTrips).post(protect, createTrip);
+router.route('/:id').get(protect, getTrip).delete(protect, deleteTrip);
 router.put('/:id/archive', protect, archiveTrip);
+router.put('/:id/unarchive', protect, unarchiveTrip);
+
+// ─── Messages ─────────────────────────────────────────────
+router.get('/:id/messages', protect, getMessages);
+router.post('/:id/messages', protect, addMessage);
+router.put('/:id/messages/mark-read', protect, markMessagesRead);
+router.put('/:id/messages/:messageId', protect, editMessage);
+router.delete('/:id/messages/:messageId', protect, deleteMessage);
+
+// ─── Polls (NEW — separate collection) ────────────────────
+router.get('/:id/polls', protect, getPolls);
+router.post('/:id/polls', protect, addPoll);
+router.delete('/:id/polls/:pollId', protect, deletePoll);
+router.post('/:id/polls/:pollId/choices', protect, addPollChoice);
+router.delete('/:id/polls/:pollId/choices/:choiceId', protect, deletePollChoice);
+router.put('/:id/polls/:pollId/vote', protect, votePoll);
+
+// ─── Itinerary ────────────────────────────────────────────
+router.get('/:id/itinerary', protect, getItinerary);
+router.post('/:id/itinerary', protect, addItinerary);
+router.put('/:id/itinerary/:itineraryId', protect, updateItinerary);
+router.delete('/:id/itinerary/:itineraryId', protect, deleteItinerary);
+
+// ─── Expenses ─────────────────────────────────────────────
+router.get('/:id/expenses', protect, getExpenses);
+router.post('/:id/expenses', protect, addExpense);
+router.put('/:id/expenses/:expenseId', protect, updateExpense);
+router.delete('/:id/expenses/:expenseId', protect, deleteExpense);
+
+// ─── Members ──────────────────────────────────────────────
+router.post('/:id/members', protect, addMember);
+router.delete('/:id/members/:userId', protect, removeMember);
 
 export default router;

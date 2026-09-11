@@ -47,15 +47,31 @@ export const useTrips = () => {
 
   const archiveTrip = async (tripId) => {
     try {
-      await tripService.archive(tripId);
+      const updatedTrip = await tripService.archive(tripId);
       setTrips((prev) =>
         prev.map((trip) =>
-          trip._id === tripId ? { ...trip, status: 'archived' } : trip
+          trip._id === tripId ? updatedTrip : trip
         )
       );
       toast.success('Trip archived!');
     } catch (err) {
       toast.error(err.message || 'Failed to archive trip');
+    }
+  };
+
+  const unarchiveTrip = async (tripId) => {
+    try {
+      const updatedTrip = await tripService.unarchive(tripId);
+      setTrips((prev) =>
+        prev.map((trip) =>
+          trip._id === tripId ? updatedTrip : trip
+        )
+      );
+      toast.success('Trip restored!');
+      return { success: true };
+    } catch (err) {
+      toast.error(err.message || 'Failed to unarchive trip');
+      return { success: false, error: err.message };
     }
   };
 
@@ -71,5 +87,6 @@ export const useTrips = () => {
     createTrip,
     deleteTrip,
     archiveTrip,
+    unarchiveTrip,     
   };
 };

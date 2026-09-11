@@ -1,22 +1,28 @@
 import React, { useState } from 'react';
-import { Plus, Clock, MapPin, Plane, Hotel, Coffee, Calendar as CalendarIcon } from 'lucide-react';
+import {
+  Plus, Clock, MapPin, Plane, Hotel, Coffee,
+  Calendar as CalendarIcon, Pencil, Trash2,
+} from 'lucide-react';
+import { EditActivityModal } from './modals/EditActivityModal';
+import { ConfirmModal } from './modals/ConfirmModals';
 
-function ItineraryTab({ trip, onAddActivity }) {
+function ItineraryTab({
+  trip,
+  itinerary = [],             
+  onAddActivity,
+  onUpdateActivity,
+  onDeleteActivity,
+}) {
   const [expandedDay, setExpandedDay] = useState(null);
+  const [editingActivity, setEditingActivity] = useState(null);
+  const [deletingActivity, setDeletingActivity] = useState(null);
 
-  const activities = trip?.activities || [];
-
-  const groupActivitiesByDay = () => {
-    const grouped = {};
-    activities.forEach((activity) => {
-      const day = `Day ${activity.day}`;
-      if (!grouped[day]) grouped[day] = [];
-      grouped[day].push(activity);
-    });
-    return grouped;
-  };
-
-  const groupedActivities = groupActivitiesByDay();
+  const groupedActivities = itinerary.reduce((groups, item) => {
+    const day = `Day ${item.day}`;
+    if (!groups[day]) groups[day] = [];
+    groups[day].push(item);
+    return groups;
+  }, {});
 
   const getTypeIcon = (type) => {
     switch (type) {
@@ -36,8 +42,20 @@ function ItineraryTab({ trip, onAddActivity }) {
     }
   };
 
-  const toggleDay = (day) => {
-    setExpandedDay(expandedDay === day ? null : day);
+  const toggleDay = (day) => setExpandedDay(expandedDay === day ? null : day);
+
+  const handleConfirmDelete = async () => {
+    if (!deletingActivity) return;
+    await onDeleteActivity(deletingActivity._id);
+    setDeletingActivity(null);
+  };
+
+  const handleSaveEdit = async (updatedData) => {
+    if (!editingActivity) return;
+    const result = await onUpdateActivity(editingActivity._id, updatedData);
+    if (result?.success) {
+      setEditingActivity(null);
+    }
   };
 
   return (
@@ -62,14 +80,19 @@ function ItineraryTab({ trip, onAddActivity }) {
       ) : (
         <div className="space-y-3">
           {Object.entries(groupedActivities).map(([day, dayActivities]) => (
-            <div key={day} className="border border-[#e8eaed] dark:border-dark-border rounded-lg overflow-hidden">
+            <div
+              key={day}
+              className="border border-[#e8eaed] dark:border-dark-border rounded-lg overflow-hidden"
+            >
               <button
                 onClick={() => toggleDay(day)}
                 className="w-full px-4 py-3 flex items-center justify-between bg-terracotta-soft/30 dark:bg-dark-terracotta-soft/30 hover:bg-terracotta-soft/50 dark:hover:bg-dark-terracotta-soft/50 transition-colors"
               >
                 <div className="flex items-center gap-2">
                   <CalendarIcon className="w-4 h-4 text-terracotta dark:text-dark-terracotta" />
-                  <span className="font-medium text-deep-charcoal dark:text-dark-text">{day}</span>
+                  <span className="font-medium text-deep-charcoal dark:text-dark-text">
+                    {day}
+                  </span>
                   <span className="text-xs text-warm-grey dark:text-dark-text-secondary">
                     ({dayActivities.length} activities)
                   </span>
@@ -78,19 +101,22 @@ function ItineraryTab({ trip, onAddActivity }) {
                   {expandedDay === day ? '▲' : '▼'}
                 </span>
               </button>
+
               {expandedDay === day && (
                 <div className="divide-y divide-[#e8eaed] dark:divide-dark-border">
                   {dayActivities.map((activity) => (
-                    <div key={activity._id || activity.id} className="flex items-start gap-3 px-4 py-3">
+                    <div
+                      key={activity._id}
+                      className="flex items-start gap-3 px-4 py-3 hover:bg-[#F8F9FA] dark:hover:bg-dark-card/50 transition-colors group"
+                    >
                       <div className={`p-2 rounded-lg ${getTypeColor(activity.type)}`}>
                         {getTypeIcon(activity.type)}
                       </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-deep-charcoal dark:text-dark-text">
-                            {activity.title}
-                          </span>
-                        </div>
+
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-deep-charcoal dark:text-dark-text">
+                          {activity.title}
+                        </p>
                         <div className="flex items-center gap-3 text-xs text-warm-grey dark:text-dark-text-secondary mt-1">
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
@@ -98,6 +124,23 @@ function ItineraryTab({ trip, onAddActivity }) {
                           </span>
                           <span className="capitalize">{activity.type}</span>
                         </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => setEditingActivity(activity)}
+                          className="p-1.5 rounded-lg text-warm-grey dark:text-dark-text-secondary hover:bg-terracotta-soft dark:hover:bg-dark-terracotta-soft hover:text-terracotta transition-colors"
+                          title="Edit"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeletingActivity(activity)}
+                          className="p-1.5 rounded-lg text-warm-grey dark:text-dark-text-secondary hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-500 transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -107,6 +150,25 @@ function ItineraryTab({ trip, onAddActivity }) {
           ))}
         </div>
       )}
+
+      <EditActivityModal
+        isOpen={!!editingActivity}
+        onClose={() => setEditingActivity(null)}
+        trip={trip}
+        activity={editingActivity}
+        onSave={handleSaveEdit}
+      />
+
+      <ConfirmModal
+        isOpen={!!deletingActivity}
+        title="Delete Activity"
+        message={`Are you sure you want to delete "${deletingActivity?.title}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        isDanger
+        onConfirm={handleConfirmDelete}
+        onClose={() => setDeletingActivity(null)}
+      />
     </div>
   );
 }

@@ -97,6 +97,16 @@ function CreateTripModal({ isOpen, onClose, onSubmit, newTrip, setNewTrip }) {
     };
   }, [destinationSearch, fetchDestinations, isOpen, newTrip.destination]);
 
+  useEffect(() => {
+    if (!isOpen) {
+      setDestinationSearch('');
+      setSuggestions([]);
+      setIsDropdownOpen(false);
+      setDateError('');
+      setMembersInput('1');
+    }
+  }, [isOpen]);
+
   const handleSelectDestination = (dest) => {
     setDestinationSearch(dest);
     setNewTrip({ ...newTrip, destination: dest });
@@ -108,65 +118,6 @@ function CreateTripModal({ isOpen, onClose, onSubmit, newTrip, setNewTrip }) {
     const value = e.target.value;
     setDestinationSearch(value);
     setNewTrip({ ...newTrip, destination: value });
-  };
-
-  useEffect(() => {
-    if (!isOpen) {
-      setDestinationSearch('');
-      setSuggestions([]);
-      setIsDropdownOpen(false);
-      setDateError('');
-      setMembersInput('1');
-    }
-  }, [isOpen]);
-
-  const validateDates = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const startDate = new Date(newTrip.startDate);
-    startDate.setHours(0, 0, 0, 0);
-
-    const endDate = new Date(newTrip.endDate);
-    endDate.setHours(0, 0, 0, 0);
-
-    if (startDate < today) {
-      setDateError('Start date cannot be in the past.');
-      return false;
-    }
-
-    if (endDate < today) {
-      setDateError('End date cannot be in the past.');
-      return false;
-    }
-
-    if (endDate < startDate) {
-      setDateError('End date must be after start date.');
-      return false;
-    }
-
-    setDateError('');
-    return true;
-  };
-
-  const handleSubmit = () => {
-    if (!newTrip.name || !newTrip.destination || !newTrip.startDate || !newTrip.endDate) {
-      setDateError('Please fill in all required fields.');
-      return;
-    }
-
-    const parsedMembers = parseInt(membersInput, 10);
-    if (isNaN(parsedMembers) || parsedMembers < 1) {
-      setDateError('Members must be at least 1.');
-      return;
-    }
-    setNewTrip({ ...newTrip, members: parsedMembers });
-
-    if (!validateDates()) {
-      return;
-    }
-
-    onSubmit();
   };
 
   const handleDateChange = (field, value) => {
@@ -181,7 +132,6 @@ function CreateTripModal({ isOpen, onClose, onSubmit, newTrip, setNewTrip }) {
 
   const handleMembersChange = (e) => {
     const value = e.target.value;
-    // Allow only digits
     if (value === '' || /^\d+$/.test(value)) {
       setMembersInput(value);
       setDateError('');
@@ -198,12 +148,57 @@ function CreateTripModal({ isOpen, onClose, onSubmit, newTrip, setNewTrip }) {
     }
   };
 
+  const validateDates = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const startDate = new Date(newTrip.startDate);
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(newTrip.endDate);
+    endDate.setHours(0, 0, 0, 0);
+
+    if (startDate < today) {
+      setDateError('Start date cannot be in the past.');
+      return false;
+    }
+    if (endDate < today) {
+      setDateError('End date cannot be in the past.');
+      return false;
+    }
+    if (endDate < startDate) {
+      setDateError('End date must be after start date.');
+      return false;
+    }
+    setDateError('');
+    return true;
+  };
+
+  const handleSubmit = () => {
+    if (!newTrip.name || !newTrip.destination || !newTrip.startDate || !newTrip.endDate) {
+      setDateError('Please fill in all required fields.');
+      return;
+    }
+
+    const parsedMembers = parseInt(membersInput, 10);
+    if (isNaN(parsedMembers) || parsedMembers < 1) {
+      setDateError('Members must be at least 1.');
+      return;
+    }
+
+    setNewTrip({ ...newTrip, members: parsedMembers });
+
+    if (!validateDates()) return;
+
+    onSubmit();
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm p-4">
       <div className="bg-white dark:bg-dark-card rounded-2xl max-w-md w-full p-6 border border-[#e8eaed] dark:border-dark-border shadow-2xl relative max-h-[90vh] overflow-y-auto">
-        
+
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-terracotta-soft dark:hover:bg-dark-terracotta-soft transition-colors"
@@ -227,10 +222,7 @@ function CreateTripModal({ isOpen, onClose, onSubmit, newTrip, setNewTrip }) {
         <div className="space-y-4">
 
           <div>
-            <label
-              htmlFor="tripName"
-              className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5"
-            >
+            <label htmlFor="tripName" className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
               Trip Name
             </label>
             <input
@@ -244,10 +236,7 @@ function CreateTripModal({ isOpen, onClose, onSubmit, newTrip, setNewTrip }) {
           </div>
 
           <div className="relative" ref={dropdownRef}>
-            <label
-              htmlFor="destination"
-              className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5"
-            >
+            <label htmlFor="destination" className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
               Destination
             </label>
             <div className="relative">
@@ -258,9 +247,7 @@ function CreateTripModal({ isOpen, onClose, onSubmit, newTrip, setNewTrip }) {
                 value={destinationSearch}
                 onChange={handleDestinationChange}
                 onFocus={() => {
-                  if (suggestions.length > 0) {
-                    setIsDropdownOpen(true);
-                  }
+                  if (suggestions.length > 0) setIsDropdownOpen(true);
                 }}
                 className="w-full px-4 py-2.5 pr-10 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text placeholder:text-warm-grey/60 dark:placeholder:text-dark-text-secondary/60 focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] focus:border-transparent transition-all duration-200"
               />
@@ -287,10 +274,7 @@ function CreateTripModal({ isOpen, onClose, onSubmit, newTrip, setNewTrip }) {
           </div>
 
           <div>
-            <label
-              htmlFor="startDate"
-              className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5"
-            >
+            <label htmlFor="startDate" className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
               Start Date
             </label>
             <input
@@ -303,10 +287,7 @@ function CreateTripModal({ isOpen, onClose, onSubmit, newTrip, setNewTrip }) {
           </div>
 
           <div>
-            <label
-              htmlFor="endDate"
-              className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5"
-            >
+            <label htmlFor="endDate" className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
               End Date
             </label>
             <input
@@ -319,14 +300,11 @@ function CreateTripModal({ isOpen, onClose, onSubmit, newTrip, setNewTrip }) {
           </div>
 
           <div>
-            <label
-              htmlFor="members"
-              className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5"
-            >
+            <label htmlFor="members" className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
               Number of Members
             </label>
             <input
-              type="text" 
+              type="text"
               id="members"
               inputMode="numeric"
               pattern="[0-9]*"

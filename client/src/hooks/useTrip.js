@@ -10,6 +10,11 @@ export const useTrip = (tripId) => {
   const navigate = useNavigate();
 
   const fetchTrip = async () => {
+    if (!tripId) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/api/trips/${tripId}`, {

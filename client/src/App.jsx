@@ -13,6 +13,7 @@ import RecentActivity from './pages/RecentActivity';
 import Notifications from './pages/Notifications';
 import GoogleCallback from './pages/GoogleCallback';
 import Verify from './pages/Verify';
+import Archive from './pages/Archive';
 
 function AppContent() {
   const location = useLocation();
@@ -22,7 +23,8 @@ function AppContent() {
                           location.pathname.startsWith('/trips') ||
                           location.pathname.startsWith('/profile') ||
                           location.pathname.startsWith('/activity') ||
-                          location.pathname.startsWith('/notifications');
+                          location.pathname.startsWith('/notifications') ||
+                          location.pathname.startsWith('/archive');
 
   const [theme, setTheme] = useState(() => {
     const stored = localStorage.getItem('theme');
@@ -61,6 +63,7 @@ function AppContent() {
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/google-callback" element={<GoogleCallback />} />
         <Route path="/verify" element={<Verify theme={theme} toggleTheme={toggleTheme} />} />
+        <Route path="/archive" element={<Archive />} />
       </Routes>
     </div>
   );

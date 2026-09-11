@@ -1,12 +1,17 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, MapPin, Share2, Edit, Trash2, UserPlus } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Share2, Edit, Trash2, UserPlus, Crown } from 'lucide-react';
 import { MemberAvatar } from './MemberAvatar';
 import { StatusBadge } from './StatusBadge';
 
-export const TripInfoHeader = ({ trip, onDelete, onAddMembers }) => {
-  const members = Array.isArray(trip.members) ? trip.members : [];
-  const memberCount = members.length || trip.members || 0;
+export const TripInfoHeader = ({ trip, currentUser, onDelete, onAddMembers }) => {
+  const members = Array.isArray(trip?.members) ? trip.members : [];
+  const memberCount = members.length;
+
+  const currentUserId = currentUser?._id || currentUser?.id;
+  const ownerId = trip?.userId?._id || trip?.userId;
+  const isOwner =
+    currentUserId && ownerId && currentUserId.toString() === ownerId.toString();
 
   return (
     <>
@@ -18,31 +23,55 @@ export const TripInfoHeader = ({ trip, onDelete, onAddMembers }) => {
           <ArrowLeft className="w-4 h-4" />
           Back to Dashboard
         </Link>
+
         <div className="flex items-center gap-1">
-          <button className="p-2 rounded-lg hover:bg-terracotta-soft dark:hover:bg-dark-terracotta-soft transition-colors" title="Share">
+          <button
+            className="p-2 rounded-lg hover:bg-terracotta-soft dark:hover:bg-dark-terracotta-soft transition-colors"
+            title="Share"
+          >
             <Share2 className="w-4 h-4 text-warm-grey dark:text-dark-text-secondary" />
           </button>
-          <button className="p-2 rounded-lg hover:bg-terracotta-soft dark:hover:bg-dark-terracotta-soft transition-colors" title="Edit">
-            <Edit className="w-4 h-4 text-warm-grey dark:text-dark-text-secondary" />
-          </button>
-          <button
-            onClick={onDelete}
-            className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-            title="Delete"
-          >
-            <Trash2 className="w-4 h-4 text-red-500" />
-          </button>
+
+          {isOwner && (
+            <button
+              className="p-2 rounded-lg hover:bg-terracotta-soft dark:hover:bg-dark-terracotta-soft transition-colors"
+              title="Edit Trip"
+            >
+              <Edit className="w-4 h-4 text-warm-grey dark:text-dark-text-secondary" />
+            </button>
+          )}
+
+          {isOwner && (
+            <button
+              onClick={onDelete}
+              className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+              title="Delete Trip"
+            >
+              <Trash2 className="w-4 h-4 text-red-500" />
+            </button>
+          )}
         </div>
       </div>
 
       <div className="bg-white dark:bg-dark-card border border-[#e8eaed] dark:border-dark-border rounded-xl p-4 sm:p-6 mb-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <h1 className="text-2xl sm:text-3xl font-serif font-bold text-deep-charcoal dark:text-dark-text">
                 {trip.name || trip.destination}
               </h1>
               <StatusBadge status={trip.status} />
+
+              {isOwner ? (
+                <span className="flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                  <Crown className="w-3 h-3" />
+                  Owner
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800/40 dark:text-gray-400">
+                  Member
+                </span>
+              )}
             </div>
             <p className="text-sm text-warm-grey dark:text-dark-text-secondary flex items-center gap-2">
               <MapPin className="w-4 h-4" />
@@ -51,25 +80,36 @@ export const TripInfoHeader = ({ trip, onDelete, onAddMembers }) => {
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-warm-grey dark:text-dark-text-secondary mt-1">
               <span className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
-                {new Date(trip.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} -
-                {new Date(trip.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                {new Date(trip.startDate).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}{' '}
+                -{' '}
+                {new Date(trip.endDate).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="flex -space-x-2">
-              {Array.isArray(members) && members.slice(0, 5).map((member) => (
+              {members.slice(0, 5).map((member) => (
                 <MemberAvatar key={member._id} member={member} />
               ))}
               {memberCount > 5 && (
                 <div className="w-8 h-8 rounded-full bg-[#e8eaed] dark:bg-dark-border flex items-center justify-center border-2 border-white dark:border-dark-card">
-                  <span className="text-xs text-warm-grey dark:text-dark-text-secondary">+{memberCount - 5}</span>
+                  <span className="text-xs text-warm-grey dark:text-dark-text-secondary">
+                    +{memberCount - 5}
+                  </span>
                 </div>
               )}
             </div>
             <span className="text-sm text-warm-grey dark:text-dark-text-secondary">
-              {memberCount} members
+              {memberCount} / {trip.targetMembers || memberCount} members
             </span>
             <button
               onClick={onAddMembers}
