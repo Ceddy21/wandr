@@ -1,6 +1,7 @@
 import Poll from '../models/Polls.js';
 import Trip from '../models/Trip.js';
 import User from '../models/User.js';
+import { logTripActivity } from '../utils/logTripActivity.js';
 
 const verifyTripAccess = async (tripId, userId) => {
   return await Trip.findOne({
@@ -37,7 +38,6 @@ export const addPoll = async (req, res) => {
     const trip = await verifyTripAccess(req.params.id, req.userId);
     if (!trip) return res.status(404).json({ message: 'Trip not found' });
 
-    // Get creator's name
     const user = await User.findById(req.userId).select('name email');
     const creatorName =
       user?.name || user?.email?.split('@')[0] || 'Someone';
@@ -61,6 +61,16 @@ export const addPoll = async (req, res) => {
     });
 
     await poll.save();
+
+    // ─── Log activity ─────────────────────────────────────
+    await logTripActivity({
+      userId: req.userId,
+      tripId: req.params.id,
+      type: 'poll_created',
+      description: `created poll "${poll.question}"`,
+      targetId: poll._id,
+      tripName: trip.name,
+    });
 
     const io = req.app.get('io');
     if (io) io.to(`trip:${req.params.id}`).emit('poll-updated');
@@ -88,7 +98,19 @@ export const deletePoll = async (req, res) => {
       });
     }
 
+    const pollQuestion = poll.question;
+    const pollIdRef = poll._id;
     await poll.deleteOne();
+
+    // ─── Log activity ─────────────────────────────────────
+    await logTripActivity({
+      userId: req.userId,
+      tripId: req.params.id,
+      type: 'poll_deleted',
+      description: `deleted poll "${pollQuestion}"`,
+      targetId: pollIdRef,
+      tripName: trip.name,
+    });
 
     const io = req.app.get('io');
     if (io) io.to(`trip:${req.params.id}`).emit('poll-updated');
@@ -134,6 +156,16 @@ export const addPollChoice = async (req, res) => {
 
     await poll.save();
 
+    // ─── Log activity ─────────────────────────────────────
+    await logTripActivity({
+      userId: req.userId,
+      tripId: req.params.id,
+      type: 'poll_option_added',
+      description: `added option "${text.trim()}" to "${poll.question}"`,
+      targetId: poll._id,
+      tripName: trip.name,
+    });
+
     const io = req.app.get('io');
     if (io) io.to(`trip:${req.params.id}`).emit('poll-updated');
 
@@ -164,10 +196,21 @@ export const deletePollChoice = async (req, res) => {
     }
 
     const choiceText = choice.text;
+    const pollQuestion = poll.question;
     poll.options.pull(choiceId);
     poll.votes = poll.votes.filter((v) => v.optionText !== choiceText);
 
     await poll.save();
+
+    // ─── Log activity ─────────────────────────────────────
+    await logTripActivity({
+      userId: req.userId,
+      tripId: req.params.id,
+      type: 'poll_option_deleted',
+      description: `removed option "${choiceText}" from "${pollQuestion}"`,
+      targetId: poll._id,
+      tripName: trip.name,
+    });
 
     const io = req.app.get('io');
     if (io) io.to(`trip:${req.params.id}`).emit('poll-updated');

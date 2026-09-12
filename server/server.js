@@ -17,6 +17,7 @@ dotenv.config({ path: './.env' });
 import authRoutes from './src/routes/authRoutes.js';
 import tripRoutes from './src/routes/tripRoutes.js';
 import userRoutes from './src/routes/userRoutes.js';
+import activityRoutes from './src/routes/activityRoutes.js';
 
 const requiredEnvVars = [
   'PORT',
@@ -98,6 +99,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/trips', tripRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/activities', activityRoutes); 
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Oops! This route does not exist.' });

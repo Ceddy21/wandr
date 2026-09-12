@@ -1,15 +1,26 @@
 import Trip from '../models/Trip.js';
 import mongoose from 'mongoose';
 import User from '../models/User.js';
+import { logTripActivity } from '../utils/logTripActivity.js';
 
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+
+// Owner OR member can view/add
 const findMemberTrip = (tripId, userId) =>
   Trip.findOne({
     _id: tripId,
     $or: [{ userId }, { members: userId }],
   });
 
+// Owner ONLY (delete, archive, remove member)
 const findOwnedTrip = (tripId, userId) =>
   Trip.findOne({ _id: tripId, userId });
+
+// ═══════════════════════════════════════════════════════════
+// GET
+// ═══════════════════════════════════════════════════════════
 
 export const getTrip = async (req, res) => {
   try {
@@ -38,6 +49,10 @@ export const getTrips = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch trips' });
   }
 };
+
+// ═══════════════════════════════════════════════════════════
+// CREATE / DELETE / ARCHIVE
+// ═══════════════════════════════════════════════════════════
 
 export const createTrip = async (req, res) => {
   try {
@@ -71,6 +86,17 @@ export const createTrip = async (req, res) => {
 
     await trip.save();
     await trip.populate('members', 'name email avatar');
+
+    // ─── Log activity ─────────────────────────────────────
+    await logTripActivity({
+      userId: req.userId,
+      tripId: trip._id,
+      type: 'trip_created',
+      description: 'created the trip',
+      targetId: trip._id,
+      tripName: trip.name,
+    });
+
     res.status(201).json(trip);
   } catch (error) {
     console.error('Create trip error:', error);
@@ -102,6 +128,17 @@ export const archiveTrip = async (req, res) => {
 
     trip.status = 'archived';
     await trip.save();
+
+    // ─── Log activity ─────────────────────────────────────
+    await logTripActivity({
+      userId: req.userId,
+      tripId: trip._id,
+      type: 'trip_archived',
+      description: 'archived the trip',
+      targetId: trip._id,
+      tripName: trip.name,
+    });
+
     res.json(trip);
   } catch (error) {
     console.error('Archive trip error:', error);
@@ -119,12 +156,27 @@ export const unarchiveTrip = async (req, res) => {
     trip.status = 'upcoming';
     await trip.save();
     await trip.populate('members', 'name email avatar');
+
+    // ─── Log activity ─────────────────────────────────────
+    await logTripActivity({
+      userId: req.userId,
+      tripId: trip._id,
+      type: 'trip_unarchived',
+      description: 'unarchived the trip',
+      targetId: trip._id,
+      tripName: trip.name,
+    });
+
     res.json(trip);
   } catch (error) {
     console.error('Unarchive trip error:', error);
     res.status(500).json({ message: 'Failed to unarchive trip' });
   }
 };
+
+// ═══════════════════════════════════════════════════════════
+// MEMBERS
+// ═══════════════════════════════════════════════════════════
 
 export const addMember = async (req, res) => {
   try {
@@ -143,6 +195,21 @@ export const addMember = async (req, res) => {
 
     await trip.save();
     await trip.populate('members', 'name email avatar');
+
+    // ─── Log activity (only if newly added) ───────────────
+    if (!alreadyMember) {
+      const added = await User.findById(userId).select('name');
+
+      await logTripActivity({
+        userId: req.userId,
+        tripId: trip._id,
+        type: 'member_added',
+        description: `added ${added?.name || 'a member'} to the trip`,
+        targetId: userId,
+        tripName: trip.name,
+      });
+    }
+
     res.json(trip);
   } catch (error) {
     console.error('Add member error:', error);
@@ -163,10 +230,25 @@ export const removeMember = async (req, res) => {
 
     if (!Array.isArray(trip.members)) trip.members = [];
 
+    const removed = await User.findById(userId).select('name');
+
     trip.members = trip.members.filter((m) => m.toString() !== userId);
 
     await trip.save();
     await trip.populate('members', 'name email avatar');
+
+    // ─── Log activity (only if actually removed) ──────────
+    if (removed) {
+      await logTripActivity({
+        userId: req.userId,
+        tripId: trip._id,
+        type: 'member_removed',
+        description: `removed ${removed.name} from the trip`,
+        targetId: userId,
+        tripName: trip.name,
+      });
+    }
+
     res.json(trip);
   } catch (error) {
     console.error('Remove member error:', error);

@@ -1,5 +1,6 @@
 import Expense from '../models/Expense.js';
 import Trip from '../models/Trip.js';
+import { logTripActivity } from '../utils/logTripActivity.js';
 
 const verifyTripAccess = async (tripId, userId) => {
   return Trip.findOne({
@@ -46,6 +47,18 @@ export const addExpense = async (req, res) => {
     });
 
     await expense.save();
+
+    // ─── Log activity ─────────────────────────────────────
+    await logTripActivity({
+      userId: req.userId,
+      tripId: req.params.id,
+      type: 'expense_added',
+      description: `added ₱${expense.amount.toLocaleString()} for ${expense.description}`,
+      targetId: expense._id,
+      amount: expense.amount,
+      tripName: trip.name,
+    });
+
     res.status(201).json(expense);
   } catch (error) {
     console.error('Add expense error:', error);
@@ -75,6 +88,18 @@ export const updateExpense = async (req, res) => {
     if (date !== undefined) expense.date = date;
 
     await expense.save();
+
+    // ─── Log activity ─────────────────────────────────────
+    await logTripActivity({
+      userId: req.userId,
+      tripId: req.params.id,
+      type: 'expense_updated',
+      description: `updated expense "${expense.description}"`,
+      targetId: expense._id,
+      amount: expense.amount,
+      tripName: trip.name,
+    });
+
     res.json(expense);
   } catch (error) {
     console.error('Update expense error:', error);
@@ -94,6 +119,17 @@ export const deleteExpense = async (req, res) => {
       tripId: req.params.id,
     });
     if (!expense) return res.status(404).json({ message: 'Expense not found' });
+
+    // ─── Log activity ─────────────────────────────────────
+    await logTripActivity({
+      userId: req.userId,
+      tripId: req.params.id,
+      type: 'expense_deleted',
+      description: `deleted expense "${expense.description}"`,
+      targetId: expense._id,
+      amount: expense.amount,
+      tripName: trip.name,
+    });
 
     res.json({ message: 'Expense deleted successfully' });
   } catch (error) {

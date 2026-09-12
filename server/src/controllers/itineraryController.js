@@ -1,5 +1,6 @@
 import Itinerary from '../models/Itinerary.js';
 import Trip from '../models/Trip.js';
+import { logTripActivity } from '../utils/logTripActivity.js';
 
 const verifyTripAccess = async (tripId, userId) => {
   return Trip.findOne({
@@ -44,6 +45,17 @@ export const addItinerary = async (req, res) => {
     });
 
     await item.save();
+
+    // ─── Log activity ─────────────────────────────────────
+    await logTripActivity({
+      userId: req.userId,
+      tripId: req.params.id,
+      type: 'activity_added',
+      description: `added "${item.title}" to the itinerary`,
+      targetId: item._id,
+      tripName: trip.name,
+    });
+
     res.status(201).json(item);
   } catch (error) {
     console.error('Add itinerary error:', error);
@@ -71,6 +83,17 @@ export const updateItinerary = async (req, res) => {
     if (type !== undefined) item.type = type;
 
     await item.save();
+
+    // ─── Log activity ─────────────────────────────────────
+    await logTripActivity({
+      userId: req.userId,
+      tripId: req.params.id,
+      type: 'activity_updated',
+      description: `updated itinerary item "${item.title}"`,
+      targetId: item._id,
+      tripName: trip.name,
+    });
+
     res.json(item);
   } catch (error) {
     console.error('Update itinerary error:', error);
@@ -90,6 +113,16 @@ export const deleteItinerary = async (req, res) => {
       tripId: req.params.id,
     });
     if (!item) return res.status(404).json({ message: 'Itinerary item not found' });
+
+    // ─── Log activity ─────────────────────────────────────
+    await logTripActivity({
+      userId: req.userId,
+      tripId: req.params.id,
+      type: 'activity_deleted',
+      description: `deleted itinerary item "${item.title}"`,
+      targetId: item._id,
+      tripName: trip.name,
+    });
 
     res.json({ message: 'Itinerary item deleted successfully' });
   } catch (error) {

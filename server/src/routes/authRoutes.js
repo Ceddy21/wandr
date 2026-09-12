@@ -1,22 +1,41 @@
 import express from 'express';
-import { register, verify, login, logout, getMe, resendVerification, changePassword, googleLogin, getGoogleAuthUrl, googleCallback } from '../controllers/authController.js';
 import { protect } from '../middleware/auth.js';
-import { authLimiter } from '../utils/authLimiter.js';
-import { get } from 'mongoose';
+import {
+  register,
+  verify,
+  login,
+  logout,
+  getMe,
+  updateProfile,       // ← new
+  deleteAccount,       // ← new
+  requestAccountDeletion,
+  resendVerification,
+  changePassword,
+  googleLogin,
+  getGoogleAuthUrl,
+  googleCallback,
+} from '../controllers/authController.js';
 
 const router = express.Router();
 
-router.post('/register', authLimiter, register);
-router.post('/verify', authLimiter, verify);
-router.post('/login', authLimiter, login);
-router.post('/logout', authLimiter, logout);
-router.post('/resend-verification', authLimiter, resendVerification);
+// ─── Public ───────────────────────────────────────────
+router.post('/register', register);
+router.post('/verify', verify);
+router.post('/login', login);
+router.post('/logout', logout);
+router.post('/resend-verification', resendVerification);
 
+// ─── Google OAuth ─────────────────────────────────────
 router.get('/google/url', getGoogleAuthUrl);
 router.post('/google/login', googleLogin);
 router.get('/google/callback', googleCallback);
 
+// ─── Protected (require auth) ─────────────────────────
 router.get('/me', protect, getMe);
-router.put('/change-password', protect, changePassword);
+router.put('/profile', protect, updateProfile);      
+router.delete('/account', protect, deleteAccount);     
+router.post('/change-password', protect, changePassword);
+router.post('/account/request-delete', protect, requestAccountDeletion);
+router.delete('/account', protect, deleteAccount);
 
 export default router;

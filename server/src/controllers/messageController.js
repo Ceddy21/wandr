@@ -1,6 +1,7 @@
 import Message from '../models/Message.js';
 import Trip from '../models/Trip.js';
 import User from '../models/User.js';
+import { logTripActivity } from '../utils/logTripActivity.js';
 
 const verifyTripAccess = async (tripId, userId) => {
   return await Trip.findOne({
@@ -51,6 +52,16 @@ export const addMessage = async (req, res) => {
 
     await message.save();
 
+    // ─── Log activity (no message text — just that it happened) ─
+    await logTripActivity({
+      userId: req.userId,
+      tripId: req.params.id,
+      type: 'message_sent',
+      description: 'sent a message in the trip chat',
+      targetId: message._id,
+      tripName: trip.name,
+    });
+
     const io = req.app.get('io');
     if (io) io.to(`trip:${req.params.id}`).emit('new-message', message);
 
@@ -87,6 +98,16 @@ export const editMessage = async (req, res) => {
     message.edited = true;
     await message.save();
 
+    // ─── Log activity ─────────────────────────────────────
+    await logTripActivity({
+      userId: req.userId,
+      tripId: req.params.id,
+      type: 'message_edited',
+      description: 'edited a chat message',
+      targetId: message._id,
+      tripName: trip.name,
+    });
+
     const io = req.app.get('io');
     if (io) io.to(`trip:${req.params.id}`).emit('message-updated', message);
 
@@ -120,6 +141,16 @@ export const deleteMessage = async (req, res) => {
     message.text = '';
     message.imageUrl = '';
     await message.save();
+
+    // ─── Log activity ─────────────────────────────────────
+    await logTripActivity({
+      userId: req.userId,
+      tripId: req.params.id,
+      type: 'message_deleted',
+      description: 'deleted a chat message',
+      targetId: message._id,
+      tripName: trip.name,
+    });
 
     const io = req.app.get('io');
     if (io) io.to(`trip:${req.params.id}`).emit('message-updated', message);
