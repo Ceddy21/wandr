@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { Loader } from 'lucide-react';
 import { useTrip } from '../hooks/useTrip';
 import { useUser } from '../hooks/useUser';
@@ -20,8 +20,11 @@ import { CreatePollModal } from '../components/trip/modals/CreatePollModal';
 import { AddMembersModal } from '../components/trip/modals/AddMembersModal';
 import { DeleteConfirmModal } from '../components/trip/modals/DeleteConfirmModal';
 
+const VALID_TABS = ['itinerary', 'expenses', 'chat', 'polls', 'members'];
+
 function TripDetail() {
   const { id } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { user: currentUser } = useUser();
   const currentUserId = currentUser?._id || currentUser?.id;
@@ -34,12 +37,30 @@ function TripDetail() {
   const pollsHook = useTripPolls(id);
   const messagesHook = useTripMessages(id);
 
-  const [activeTab, setActiveTab] = useState('itinerary');
+  // ─── Initial tab from ?tab= query param ─────────────────
+  const tabFromUrl = searchParams.get('tab');
+  const initialTab = VALID_TABS.includes(tabFromUrl) ? tabFromUrl : 'itinerary';
+
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [showAddActivity, setShowAddActivity] = useState(false);
   const [showCreatePoll, setShowCreatePoll] = useState(false);
   const [showAddMembers, setShowAddMembers] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // ─── Keep activeTab in sync with the URL ────────────────
+  useEffect(() => {
+    if (tabFromUrl && VALID_TABS.includes(tabFromUrl) && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tabFromUrl]);
+
+  // ─── Update URL when user clicks a tab ──────────────────
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setSearchParams({ tab }, { replace: true });
+  };
 
   const totalExpenses = expensesHook.expenses.reduce(
     (sum, e) => sum + (e.amount || 0),
@@ -79,7 +100,7 @@ function TripDetail() {
         onAddMembers={() => setShowAddMembers(true)}
       />
 
-      <TripTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+      <TripTabs activeTab={activeTab} setActiveTab={handleTabChange} />
 
       <div className="bg-white dark:bg-dark-card border border-[#e8eaed] dark:border-dark-border rounded-xl p-4 sm:p-6 min-h-[400px]">
         {activeTab === 'itinerary' && (
@@ -107,7 +128,7 @@ function TripDetail() {
         {activeTab === 'chat' && (
           <ChatTab
             currentUserId={currentUserId}
-            messages={messagesHook.messages}                  
+            messages={messagesHook.messages}
             newMessage={messagesHook.newMessage}
             setNewMessage={messagesHook.setNewMessage}
             onSendMessage={messagesHook.sendMessage}
@@ -120,7 +141,7 @@ function TripDetail() {
         {activeTab === 'polls' && (
           <PollsTab
             trip={trip}
-            polls={pollsHook.polls}              
+            polls={pollsHook.polls}
             currentUser={currentUser}
             onCreatePoll={() => setShowCreatePoll(true)}
             onDeletePoll={pollsHook.deletePoll}
@@ -175,7 +196,7 @@ function TripDetail() {
         isOpen={showAddMembers}
         onClose={() => setShowAddMembers(false)}
         trip={trip}
-        currentUser={currentUser}                         
+        currentUser={currentUser}
         memberSearch={membersHook.memberSearch}
         setMemberSearch={membersHook.setMemberSearch}
         memberSuggestions={membersHook.memberSuggestions}

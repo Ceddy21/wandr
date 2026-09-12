@@ -1,173 +1,186 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Trash2, AlertTriangle, X, Mail, Loader } from 'lucide-react';
+import { Loader, AlertTriangle, Mail, KeyRound, ArrowLeft } from 'lucide-react';
+import { authService } from '../../services/authService';
 
-function DeleteAccount() {
-  const navigate = useNavigate();
-  const [showModal, setShowModal] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+const CONFIRM_PHRASE = 'DELETE';
+
+const DeleteAccount = ({ isGoogleUser, onDeleted }) => {
+  // ─── Step state ───────────────────────────────────────
+  const [step, setStep] = useState('confirm'); // 'confirm' | 'verify'
+
+  // ─── Step 1 state ─────────────────────────────────────
   const [confirmText, setConfirmText] = useState('');
+  const [password, setPassword] = useState('');
 
-  const handleDeleteAccount = async () => {
-    if (confirmText !== 'DELETE') {
-      toast.error('Please type DELETE to confirm');
-      return;
-    }
+  // ─── Step 2 state ─────────────────────────────────────
+  const [code, setCode] = useState('');
 
-    setIsDeleting(true);
+  // ─── Loading flags ────────────────────────────────────
+  const [sending, setSending] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  // ─── Step 1: send verification code ───────────────────
+  const canSendCode =
+    confirmText === CONFIRM_PHRASE &&
+    (isGoogleUser || password.length > 0) &&
+    !sending;
+
+  const handleSendCode = async () => {
+    if (!canSendCode) return;
+    setSending(true);
     try {
-      // --- REPLACE WITH REAL API CALL ---
-      // const response = await fetch('/api/users/me', {
-      //   method: 'DELETE',
-      //   headers: { 'Content-Type': 'application/json' }
-      // });
-      // if (!response.ok) throw new Error('Failed to delete account');
-
-      // --- MOCK DELETE ---
-      // This would trigger the Gmail API to send a confirmation email
-      // await fetch('/api/email/delete-confirmation', {
-      //   method: 'POST',
-      //   body: JSON.stringify({ email: 'user@email.com', reason: 'user_requested' })
-      // });
-
-      toast.success('Account deletion request submitted. Please check your email to confirm.');
-      setShowModal(false);
-      // Wait a moment before redirecting
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
-    } catch (error) {
-      toast.error('Failed to delete account. Please try again.');
+      await authService.requestAccountDeletion(
+        isGoogleUser ? undefined : password
+      );
+      toast.success('Verification code sent to your email');
+      setStep('verify');
+    } catch (err) {
+      toast.error(err.message || 'Failed to send code');
     } finally {
-      setIsDeleting(false);
+      setSending(false);
+    }
+  };
+
+  // ─── Step 2: confirm with code ────────────────────────
+  const canDelete = code.trim().length >= 4 && !deleting;
+
+  const handleConfirmDelete = async () => {
+    if (!canDelete) return;
+    setDeleting(true);
+    try {
+      await authService.deleteAccount(code.trim());
+      toast.success('Account deleted');
+      onDeleted?.();
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete account');
+      setDeleting(false);
     }
   };
 
   return (
-    <>
-      {/* Delete Account Button */}
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <Trash2 className="w-5 h-5 text-red-500" />
-          <h3 className="text-lg font-semibold text-deep-charcoal dark:text-dark-text">
-            Delete Account
-          </h3>
-        </div>
-        <p className="text-sm text-warm-grey dark:text-dark-text-secondary mb-4">
-          Permanently delete your account and all associated data.
-        </p>
-
-        <div className="p-4 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20 rounded-lg">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5" />
-            <div>
-              <p className="text-sm text-red-600 dark:text-red-400 font-medium">
-                Warning: This action cannot be undone!
-              </p>
-              <p className="text-sm text-red-600/80 dark:text-red-400/80 mt-1">
-                All your trips, expenses, and data will be permanently deleted.
-                A confirmation email will be sent to your registered email address.
-              </p>
-              <button
-                onClick={() => setShowModal(true)}
-                className="mt-3 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
-              >
-                I understand, delete my account
-              </button>
-            </div>
-          </div>
+    <div className="max-w-md space-y-4">
+      {/* ─── Warning banner ──────────────────────────────── */}
+      <div className="flex items-start gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+        <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+        <div className="text-sm text-red-800 dark:text-red-300">
+          <p className="font-medium">This action is permanent.</p>
+          <p className="mt-1">
+            Your account and all associated data will be deleted. This cannot
+            be undone.
+          </p>
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-dark-card rounded-2xl max-w-md w-full p-6 border border-[#e8eaed] dark:border-dark-border shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            
+      {/* ═══════════════════════════════════════════════════
+          STEP 1 — Confirm intent, request code
+         ═══════════════════════════════════════════════════ */}
+      {step === 'confirm' && (
+        <>
+          {!isGoogleUser && (
+            <div>
+              <label className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                className="w-full px-4 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-red-500 transition-all"
+              />
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
+              Type <span className="font-mono font-bold">{CONFIRM_PHRASE}</span> to confirm
+            </label>
+            <input
+              type="text"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder={CONFIRM_PHRASE}
+              className="w-full px-4 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-red-500 transition-all"
+            />
+          </div>
+
+          <button
+            onClick={handleSendCode}
+            disabled={!canSendCode}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {sending ? (
+              <Loader className="w-4 h-4 animate-spin" />
+            ) : (
+              <Mail className="w-4 h-4" />
+            )}
+            {sending ? 'Sending code...' : 'Send verification code'}
+          </button>
+        </>
+      )}
+
+      {/* ═══════════════════════════════════════════════════
+          STEP 2 — Enter code, confirm deletion
+         ═══════════════════════════════════════════════════ */}
+      {step === 'verify' && (
+        <>
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-sm text-blue-800 dark:text-blue-300">
+            <Mail className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <p>
+              We sent a 6-digit code to your email. Enter it below to
+              confirm deletion.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
+              Verification Code
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={code}
+              onChange={(e) =>
+                setCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+              }
+              placeholder="123456"
+              maxLength={6}
+              autoFocus
+              className="w-full px-4 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text text-center tracking-[0.5em] font-mono text-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-all"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setShowModal(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-terracotta-soft dark:hover:bg-dark-terracotta-soft transition-colors"
+              onClick={handleConfirmDelete}
+              disabled={!canDelete}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <X className="w-5 h-5 text-deep-charcoal dark:text-dark-text" />
+              {deleting ? (
+                <Loader className="w-4 h-4 animate-spin" />
+              ) : (
+                <KeyRound className="w-4 h-4" />
+              )}
+              {deleting ? 'Deleting...' : 'Confirm deletion'}
             </button>
 
-            <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center mb-4">
-                <AlertTriangle className="w-8 h-8 text-red-500" />
-              </div>
-
-              <h2 className="text-2xl font-serif font-bold text-deep-charcoal dark:text-dark-text mb-2">
-                Delete Account
-              </h2>
-              <p className="text-sm text-warm-grey dark:text-dark-text-secondary mb-6">
-                Are you sure you want to delete your account? This action is permanent and cannot be undone.
-              </p>
-
-              <div className="w-full mb-6">
-                <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg text-left space-y-2">
-                  <p className="text-sm text-red-600 dark:text-red-400">
-                    <strong>This will permanently delete:</strong>
-                  </p>
-                  <ul className="text-sm text-red-600/80 dark:text-red-400/80 list-disc list-inside space-y-1">
-                    <li>Your profile and personal information</li>
-                    <li>All your trips and itineraries</li>
-                    <li>All expenses and split data</li>
-                    <li>All chat messages and polls</li>
-                  </ul>
-                </div>
-              </div>
-
-              <div className="w-full mb-6">
-                <label className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-2">
-                  Type <strong className="text-red-500">DELETE</strong> to confirm
-                </label>
-                <input
-                  type="text"
-                  value={confirmText}
-                  onChange={(e) => setConfirmText(e.target.value)}
-                  placeholder="Type DELETE here"
-                  className="w-full px-4 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text placeholder:text-warm-grey/60 dark:placeholder:text-dark-text-secondary/60 focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] focus:border-transparent transition-all duration-200"
-                />
-              </div>
-
-              <div className="flex items-center gap-3 w-full">
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2 border border-[#e8eaed] dark:border-dark-border text-deep-charcoal dark:text-dark-text rounded-lg hover:bg-off-white dark:hover:bg-dark-card transition-colors"
-                  disabled={isDeleting}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDeleteAccount}
-                  disabled={isDeleting || confirmText !== 'DELETE'}
-                  className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isDeleting ? (
-                    <>
-                      <Loader className="w-4 h-4 animate-spin" />
-                      Sending confirmation...
-                    </>
-                  ) : (
-                    <>
-                      <Mail className="w-4 h-4" />
-                      Confirm Delete
-                    </>
-                  )}
-                </button>
-              </div>
-
-              <p className="text-xs text-warm-grey dark:text-dark-text-secondary mt-4">
-                A confirmation email will be sent to your registered email address.
-                You must click the link in the email to complete the deletion.
-              </p>
-            </div>
+            <button
+              onClick={() => {
+                setStep('confirm');
+                setCode('');
+              }}
+              disabled={deleting}
+              className="inline-flex items-center gap-1 px-3 py-2.5 text-sm text-warm-grey dark:text-dark-text-secondary hover:text-deep-charcoal dark:hover:text-dark-text transition-colors disabled:opacity-50"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </button>
           </div>
-        </div>
+        </>
       )}
-    </>
+    </div>
   );
-}
+};
 
 export default DeleteAccount;

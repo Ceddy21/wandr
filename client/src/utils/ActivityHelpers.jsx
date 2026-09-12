@@ -16,49 +16,45 @@ import {
   MessageCircle,
 } from 'lucide-react';
 
-// ═══════════════════════════════════════════════════════════
-// ICON
-// ═══════════════════════════════════════════════════════════
-export const getActivityIcon = (type, className = 'w-4 h-4') => {
+// ─── Icon ────────────────────────────────────────────────
+export function getActivityIcon(type, className = 'w-4 h-4') {
   switch (type) {
-    // ─── Expenses ─────────────────────────────────────────
+    // Expenses
     case 'expense_added':   return <DollarSign className={className} />;
     case 'expense_updated': return <Pencil className={className} />;
     case 'expense_deleted': return <Trash2 className={className} />;
 
-    // ─── Members ──────────────────────────────────────────
+    // Members
     case 'member_added':    return <UserPlus className={className} />;
     case 'member_removed':  return <UserMinus className={className} />;
 
-    // ─── Itinerary ────────────────────────────────────────
+    // Itinerary
     case 'activity_added':   return <MapPin className={className} />;
     case 'activity_updated': return <Pencil className={className} />;
     case 'activity_deleted': return <Trash2 className={className} />;
 
-    // ─── Trips ────────────────────────────────────────────
+    // Trips
     case 'trip_created':    return <Plane className={className} />;
     case 'trip_archived':   return <Archive className={className} />;
     case 'trip_unarchived': return <ArchiveRestore className={className} />;
 
-    // ─── Polls ────────────────────────────────────────────
+    // Polls
     case 'poll_created':        return <FileText className={className} />;
     case 'poll_deleted':        return <Trash2 className={className} />;
     case 'poll_option_added':   return <PlusCircle className={className} />;
     case 'poll_option_deleted': return <MinusCircle className={className} />;
 
-    // ─── Chat ─────────────────────────────────────────────
+    // Chat
     case 'message_sent':    return <MessageCircle className={className} />;
     case 'message_edited':  return <Pencil className={className} />;
     case 'message_deleted': return <Trash2 className={className} />;
 
     default: return <Activity className={className} />;
   }
-};
+}
 
-// ═══════════════════════════════════════════════════════════
-// COLOR
-// ═══════════════════════════════════════════════════════════
-export const getActivityColor = (type) => {
+// ─── Color ───────────────────────────────────────────────
+export function getActivityColor(type) {
   // Broad rules first
   if (type.endsWith('_deleted')) {
     return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
@@ -81,18 +77,16 @@ export const getActivityColor = (type) => {
     case 'message_sent':        return 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400';
     default:                    return 'bg-gray-100 text-gray-700 dark:bg-gray-800/30 dark:text-gray-400';
   }
-};
+}
 
-// ═══════════════════════════════════════════════════════════
-// LINK
-// ═══════════════════════════════════════════════════════════
-export const getActivityLink = (activity) => {
+// ─── Link ────────────────────────────────────────────────
+export function getActivityLink(activity) {
   const { tripId, type } = activity;
   if (!tripId) return null;
 
   const base = `/trip/${tripId}`;
 
-  // Deleted items have no target — just land on the trip page
+  // Deleted items have no target; just land on the trip page
   if (type.endsWith('_deleted')) return base;
 
   switch (type) {
@@ -117,12 +111,10 @@ export const getActivityLink = (activity) => {
     case 'trip_unarchived':
     default:                      return base;
   }
-};
+}
 
-// ═══════════════════════════════════════════════════════════
-// TIME
-// ═══════════════════════════════════════════════════════════
-export const formatTime = (date) => {
+// ─── Time formatter ──────────────────────────────────────
+export function formatRelativeTime(date) {
   const diff = Date.now() - new Date(date).getTime();
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
@@ -135,4 +127,4 @@ export const formatTime = (date) => {
     month: 'short',
     day: 'numeric',
   });
-};
+}

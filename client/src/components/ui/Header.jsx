@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  Plane,
   Sun,
   Moon,
   User,
@@ -10,10 +9,36 @@ import {
   Compass,
   Activity,
   LayoutDashboard,
-  Archive,       
+  Archive,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import NotificationBell from './NotificationBell';
+
+// ═══════════════════════════════════════════════════════════
+// LOGO CONFIG — tweak these to resize the logo
+// ═══════════════════════════════════════════════════════════
+
+// Cloudinary URL (optimized)
+const LOGO_URL =
+  'https://res.cloudinary.com/sqlrnnth/image/upload/w_320,h_320,c_fit,q_auto,f_auto/v1789228245/wandr_nologo.png';
+
+// Logo height in pixels for each breakpoint
+const LOGO_SIZE = {
+  mobile: 64,   // < 640px
+  tablet: 72,   // 640–767px
+  desktop: 80,  // ≥ 768px
+};
+
+// Text size — scales proportionally with the logo
+const TEXT_SIZE = {
+  mobile: 'text-2xl',   // 24px
+  tablet: 'text-3xl',   // 30px
+  desktop: 'text-3xl',  // 30px
+};
+
+// ═══════════════════════════════════════════════════════════
+// COMPONENT
+// ═══════════════════════════════════════════════════════════
 
 function Header({ theme, toggleTheme }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -122,18 +147,31 @@ function Header({ theme, toggleTheme }) {
   return (
     <nav className="bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border-b border-[#e8eaed] dark:border-dark-border px-4 sm:px-6 md:px-10 lg:px-20 py-3 sm:py-4 sticky top-0 z-50 transition-colors duration-300">
       <div className="flex items-center justify-between max-w-7xl mx-auto">
-        <a href="/dashboard" className="flex items-center gap-2.5 group">
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-[#2D6A4F] to-[#E76F51] rounded-full blur-sm opacity-0 group-hover:opacity-40 transition-opacity duration-500"></div>
-            <div className="relative p-1.5 rounded-full bg-gradient-to-br from-[#2D6A4F] to-[#E76F51] text-white shadow-md">
-              <Plane className="w-5 h-5" />
-            </div>
-          </div>
-          <span className="font-serif text-xl sm:text-2xl font-bold text-[#1A1A1A] dark:text-dark-text group-hover:text-[#2D6A4F] dark:group-hover:text-[#E76F51] transition-colors duration-300 tracking-tight">
+        {/* ─── Logo + Wordmark ─────────────────────────── */}
+        <a
+          href="/dashboard"
+          className="flex items-center gap-3 group hover:opacity-90 transition-opacity duration-200"
+        >
+          {/* Logo image — sized via inline style for precise control */}
+          <img
+            src={LOGO_URL}
+            alt="Wandr logo"
+            width={LOGO_SIZE.desktop}
+            height={LOGO_SIZE.desktop}
+            style={{
+              height: 'clamp(48px, 5vw, 64px)',  // responsive, bounded
+              width: 'auto',
+            }}
+            className="object-contain"
+          />
+          <span
+            className={`font-serif font-bold text-[#1A1A1A] dark:text-dark-text group-hover:text-[#2D6A4F] dark:group-hover:text-[#E76F51] transition-colors duration-300 tracking-tight ${TEXT_SIZE.desktop}`}
+          >
             Wandr
           </span>
         </a>
 
+        {/* ─── Desktop nav ────────────────────────────── */}
         <div className="hidden md:flex items-center gap-1">
           <a
             href="/dashboard"
@@ -165,6 +203,7 @@ function Header({ theme, toggleTheme }) {
           </a>
         </div>
 
+        {/* ─── Right cluster ──────────────────────────── */}
         <div className="flex items-center gap-1">
           <NotificationBell />
 
@@ -217,6 +256,7 @@ function Header({ theme, toggleTheme }) {
           </button>
         </div>
 
+        {/* ─── Mobile controls ────────────────────────── */}
         <div className="flex md:hidden items-center gap-2">
           <button
             onClick={toggleTheme}
@@ -235,6 +275,7 @@ function Header({ theme, toggleTheme }) {
         </div>
       </div>
 
+      {/* ─── Mobile menu ──────────────────────────────── */}
       {isMobileMenuOpen && (
         <div className="md:hidden mt-3 pt-3 border-t border-[#e8eaed] dark:border-dark-border animate-in slide-in-from-top-2 duration-200">
           <a

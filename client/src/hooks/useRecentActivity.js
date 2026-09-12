@@ -7,18 +7,31 @@ export const useRecentActivities = (limit = 3) => {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchActivities = async () => {
+      setLoading(true);
+      setError('');
       try {
-        const data = await activityService.getRecent(limit);
-        setActivities(data);
+        // excludeSelf = true → only other users' activity
+        const data = await activityService.getRecent(limit, false);
+        if (!cancelled) setActivities(data);
       } catch (err) {
         console.error('Failed to fetch activities:', err);
-        setError(err.message);
+        if (!cancelled) {
+          setError(err.message);
+          setActivities([]);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
+
     fetchActivities();
+
+    return () => {
+      cancelled = true;
+    };
   }, [limit]);
 
   return { activities, loading, error };

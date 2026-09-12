@@ -1,70 +1,124 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { 
-  ArrowLeft, 
-  User, 
-  Mail, 
-  Key, 
-  Trash2, 
+import {
+  ArrowLeft,
+  User,
+  Mail,
+  Key,
+  Trash2,
   Camera,
   Loader,
-  CheckCircle,
-  AlertTriangle
 } from 'lucide-react';
-
-// ---- Import tab components ----
+import { authService } from '../services/authService';
+import { syncUser } from '../utils/authEvent';
 import EditProfileForm from '../components/profile/EditProfileForm';
 import PasswordUpdate from '../components/profile/PasswordUpdate';
 import DeleteAccount from '../components/profile/DeleteAccount';
 
-function ProfilePage() {
-  const [user, setUser] = useState({
-    name: 'Bhrenda Mae',
-    email: 'bhrenda@email.com',
-    avatar: null
-  });
-
-  const [loading, setLoading] = useState(false);
+function Profile() {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
 
-  // ---- Mock user data (replace with real API later) ----
+  // ─── Load user from API ─────────────────────────────────
   useEffect(() => {
-    // TODO: Fetch user data from API
-    // const response = await fetch('/api/users/me');
-    // const data = await response.json();
-    // setUser(data);
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const { user: u } = await authService.getMe();
+        if (cancelled) return;
+        setUser(u);
+        syncUser(u);        // ← keep Header in sync
+      } catch (err) {
+        toast.error(err.message || 'Failed to load profile');
+      } finally {
+        if (!cancelled) setLoadingUser(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
   }, []);
 
-  const handleAvatarUpload = async (file) => {
-    setLoading(true);
-    try {
-      // --- REPLACE WITH REAL CLOUDINARY UPLOAD ---
-      // const formData = new FormData();
-      // formData.append('file', file);
-      // formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
-      // const response = await fetch(
-      //   `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/upload`,
-      //   { method: 'POST', body: formData }
-      // );
-      // const data = await response.json();
-      // setUser({ ...user, avatar: data.secure_url });
+  // ─── Wrapper so children call the same sync ─────────────
+  const handleUserChange = (updatedUser) => {
+    setUser(updatedUser);
+    syncUser(updatedUser);   // ← Header + localStorage update instantly
+  };
 
-      // --- MOCK UPLOAD ---
-      const mockAvatar = 'https://res.cloudinary.com/sqlrnnth/image/upload/v1788704496/bhrendamae.jpg';
-      setUser({ ...user, avatar: mockAvatar });
-      toast.success('Avatar updated successfully!');
-    } catch (error) {
-      toast.error('Failed to upload avatar');
+  // ─── Avatar upload → Cloudinary → save URL ──────────────
+  const handleAvatarUpload = async (file) => {
+    if (!file) return;
+    setUploadingAvatar(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append(
+        'upload_preset',
+        import.meta.env.VITE_CLOUDINARY_PROFILE_PRESET
+      );
+
+      const cloudRes = await fetch(
+        `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
+        { method: 'POST', body: formData }
+      );
+      if (!cloudRes.ok) throw new Error('Cloudinary upload failed');
+      const cloudData = await cloudRes.json();
+
+      const { user: updated } = await authService.updateProfile({
+        name: user.name,
+        avatar: cloudData.secure_url,
+      });
+
+      handleUserChange(updated);   // ← sync everywhere
+      toast.success('Avatar updated!');
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || 'Failed to upload avatar');
     } finally {
-      setLoading(false);
+      setUploadingAvatar(false);
     }
   };
 
+  // ─── Loading / not-found states ─────────────────────────
+  if (loadingUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-warm-white dark:bg-dark-bg">
+        <Loader className="w-8 h-8 animate-spin text-terracotta dark:text-dark-terracotta" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-warm-white dark:bg-dark-bg">
+        <div className="text-center">
+          <p className="text-red-500 dark:text-red-400">Failed to load profile</p>
+          <Link to="/dashboard" className="text-terracotta hover:underline mt-4 block">
+            ← Back to Dashboard
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const memberSince = user.createdAt
+    ? new Date(user.createdAt).toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric',
+      })
+    : null;
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-10 lg:px-20 py-8 sm:py-12">
-
-      <Link to="/dashboard" className="inline-flex items-center gap-2 text-sm text-warm-grey dark:text-dark-text-secondary hover:text-terracotta dark:hover:text-dark-terracotta transition-colors mb-6">
+      <Link
+        to="/dashboard"
+        className="inline-flex items-center gap-2 text-sm text-warm-grey dark:text-dark-text-secondary hover:text-terracotta dark:hover:text-dark-terracotta transition-colors mb-6"
+      >
         <ArrowLeft className="w-4 h-4" />
         Back to Dashboard
       </Link>
@@ -79,16 +133,15 @@ function ProfilePage() {
       </div>
 
       <div className="bg-white dark:bg-dark-card border border-[#e8eaed] dark:border-dark-border rounded-xl overflow-hidden shadow-sm">
-
+        {/* Avatar + header */}
         <div className="p-6 sm:p-8 border-b border-[#e8eaed] dark:border-dark-border">
           <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-
             <div className="relative">
               <div className="w-24 h-24 rounded-full bg-terracotta-soft dark:bg-dark-terracotta-soft flex items-center justify-center overflow-hidden border-4 border-terracotta-soft dark:border-dark-terracotta-soft">
                 {user.avatar ? (
-                  <img 
-                    src={user.avatar} 
-                    alt={user.name}
+                  <img
+                    src={user.avatar}
+                    alt={user.name || 'avatar'}
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -96,7 +149,7 @@ function ProfilePage() {
                 )}
               </div>
               <label className="absolute bottom-0 right-0 p-1.5 rounded-full bg-terracotta dark:bg-dark-terracotta text-white hover:bg-terracotta-hover dark:hover:bg-[#c47050] transition-colors cursor-pointer">
-                {loading ? (
+                {uploadingAvatar ? (
                   <Loader className="w-4 h-4 animate-spin" />
                 ) : (
                   <Camera className="w-4 h-4" />
@@ -106,35 +159,39 @@ function ProfilePage() {
                   accept="image/*"
                   className="hidden"
                   onChange={(e) => {
-                    const file = e.target.files[0];
+                    const file = e.target.files?.[0];
                     if (file) handleAvatarUpload(file);
+                    e.target.value = '';
                   }}
-                  disabled={loading}
+                  disabled={uploadingAvatar}
                 />
               </label>
             </div>
 
             <div className="flex-1">
               <h2 className="text-xl font-semibold text-deep-charcoal dark:text-dark-text">
-                {user.name}
+                {user.name || 'Unnamed User'}
               </h2>
               <p className="text-sm text-warm-grey dark:text-dark-text-secondary flex items-center gap-1">
                 <Mail className="w-4 h-4" />
                 {user.email}
               </p>
-              <p className="text-xs text-warm-grey dark:text-dark-text-secondary mt-1">
-                Member since April 2025
-              </p>
+              {memberSince && (
+                <p className="text-xs text-warm-grey dark:text-dark-text-secondary mt-1">
+                  Member since {memberSince}
+                </p>
+              )}
             </div>
           </div>
         </div>
 
+        {/* Tabs */}
         <div className="flex border-b border-[#e8eaed] dark:border-dark-border px-6">
           {[
-            { id: 'profile', label: 'Profile', icon: User },
-            { id: 'password', label: 'Password', icon: Key },
-            { id: 'danger', label: 'Delete Account', icon: Trash2 }
-          ].map(tab => {
+            { id: 'profile',  label: 'Profile',        icon: User },
+            { id: 'password', label: 'Password',       icon: Key },
+            { id: 'danger',   label: 'Delete Account', icon: Trash2 },
+          ].map((tab) => {
             const Icon = tab.icon;
             return (
               <button
@@ -153,17 +210,22 @@ function ProfilePage() {
           })}
         </div>
 
+        {/* Tab body */}
         <div className="p-6 sm:p-8">
           {activeTab === 'profile' && (
-            <EditProfileForm user={user} setUser={setUser} />
+            <EditProfileForm user={user} onUserChange={handleUserChange} />
           )}
-
           {activeTab === 'password' && (
-            <PasswordUpdate />
+            <PasswordUpdate isGoogleUser={user.isGoogleUser} />
           )}
-
           {activeTab === 'danger' && (
-            <DeleteAccount />
+            <DeleteAccount
+              isGoogleUser={user.isGoogleUser}
+              onDeleted={() => {
+                syncUser(null);           // ← clear Header state
+                navigate('/login');
+              }}
+            />
           )}
         </div>
       </div>
@@ -171,4 +233,4 @@ function ProfilePage() {
   );
 }
 
-export default ProfilePage;
+export default Profile;

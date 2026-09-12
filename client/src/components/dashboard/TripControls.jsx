@@ -12,6 +12,7 @@ export const TripControls = ({
   setViewMode,
 }) => (
   <div className="flex flex-col sm:flex-row gap-3 mb-6">
+    {/* Search */}
     <div className="relative flex-1">
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-grey dark:text-dark-text-secondary" />
       <input
@@ -23,6 +24,7 @@ export const TripControls = ({
       />
     </div>
 
+    {/* Filter */}
     <div className="relative">
       <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-grey dark:text-dark-text-secondary" />
       <select
@@ -37,6 +39,7 @@ export const TripControls = ({
       </select>
     </div>
 
+    {/* Sort */}
     <div className="relative">
       <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-grey dark:text-dark-text-secondary" />
       <select
@@ -50,23 +53,30 @@ export const TripControls = ({
       </select>
     </div>
 
-    <div className="flex items-center gap-1 bg-black border border-[#e8eaed] dark:border-dark-border rounded-lg overflow-hidden p-1">
+    {/* Grid / List toggle — terracotta active in both modes */}
+    <div className="flex items-center gap-1 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card p-1 self-start sm:self-auto">
       <button
+        type="button"
         onClick={() => setViewMode('grid')}
+        aria-label="Grid view"
+        aria-pressed={viewMode === 'grid'}
         className={`p-2 rounded-md transition-all duration-200 ${
           viewMode === 'grid'
-            ? 'bg-terracotta text-white dark:bg-dark-terracotta shadow-sm'
-            : 'text-warm-grey dark:text-dark-text-secondary hover:bg-white/10'
+            ? 'bg-[#E76F51] text-white shadow-sm'
+            : 'text-warm-grey dark:text-dark-text-secondary hover:bg-[#F0F2F5] dark:hover:bg-dark-card/60'
         }`}
       >
         <Grid3x3 className="w-4 h-4" />
       </button>
       <button
+        type="button"
         onClick={() => setViewMode('list')}
+        aria-label="List view"
+        aria-pressed={viewMode === 'list'}
         className={`p-2 rounded-md transition-all duration-200 ${
           viewMode === 'list'
-            ? 'bg-terracotta text-white dark:bg-dark-terracotta shadow-sm'
-            : 'text-warm-grey dark:text-dark-text-secondary hover:bg-white/10'
+            ? 'bg-[#E76F51] text-white shadow-sm'
+            : 'text-warm-grey dark:text-dark-text-secondary hover:bg-[#F0F2F5] dark:hover:bg-dark-card/60'
         }`}
       >
         <List className="w-4 h-4" />

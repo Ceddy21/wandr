@@ -1,6 +1,27 @@
-import React, { useState } from 'react';
-import { Plane, Eye, EyeOff, Hand, Sun, Moon } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Plane, Eye, EyeOff, Hand, Sun, Moon, Check, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
+// ─── Password rules ──────────────────────────────────────
+const PASSWORD_RULES = [
+  { key: 'length',  label: 'At least 8 characters',  test: (p) => p.length >= 8 },
+  { key: 'lower',   label: 'One lowercase letter',   test: (p) => /[a-z]/.test(p) },
+  { key: 'upper',   label: 'One uppercase letter',   test: (p) => /[A-Z]/.test(p) },
+  { key: 'number',  label: 'One number',             test: (p) => /\d/.test(p) },
+  {
+    key: 'special',
+    label: 'One special character (!@#$%^&*_...)',
+    test: (p) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?`~]/.test(p),
+  },
+];
+
+const STRENGTH_LEVELS = [
+  { label: 'Very weak', color: '#dc2626', bg: '#dc2626' },  // red
+  { label: 'Weak',      color: '#f97316', bg: '#f97316' },  // orange
+  { label: 'Fair',      color: '#eab308', bg: '#eab308' },  // yellow
+  { label: 'Good',      color: '#84cc16', bg: '#84cc16' },  // lime
+  { label: 'Strong',    color: '#16a34a', bg: '#16a34a' },  // green
+];
 
 function Signup({ theme, toggleTheme }) {
   const [showPassword, setShowPassword] = useState(false);
@@ -11,53 +32,69 @@ function Signup({ theme, toggleTheme }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [touchedPassword, setTouchedPassword] = useState(false);
 
   const navigate = useNavigate();
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+  // ─── Password evaluation ─────────────────────────────
+  const passwordChecks = useMemo(
+    () =>
+      PASSWORD_RULES.map((rule) => ({
+        ...rule,
+        passed: rule.test(password),
+      })),
+    [password]
+  );
+
+  const passedCount = passwordChecks.filter((c) => c.passed).length;
+  const totalRules = PASSWORD_RULES.length;
+
+  // Strength score 0..4 maps to STRENGTH_LEVELS index
+  const strengthIndex = useMemo(() => {
+    if (password.length === 0) return -1;
+    if (passedCount <= 1) return 0;
+    if (passedCount === 2) return 1;
+    if (passedCount === 3) return 2;
+    if (passedCount === 4) return 3;
+    return 4; // all 5
+  }, [passedCount, password.length]);
+
+  const strength = strengthIndex >= 0 ? STRENGTH_LEVELS[strengthIndex] : null;
+  const allPassed = passedCount === totalRules;
+
+  // ─── Submit ──────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setIsLoading(true);
+
+    // Validate password strength
+    if (!allPassed) {
+      setError('Please meet all password requirements.');
+      setTouchedPassword(true);
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
-      setIsLoading(false);
       return;
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
-      setIsLoading(false);
-      return;
-    }
+    setIsLoading(true);
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          name, 
-          email, 
-          password 
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
         credentials: 'include',
       });
 
       const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Registration failed');
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
-
-      console.log('Registration successful!', data);
-      
-      // Save email temporarily for verification
       localStorage.setItem('pendingVerificationEmail', email);
       navigate('/verify');
-
     } catch (err) {
       setError(err.message);
     } finally {
@@ -74,25 +111,22 @@ function Signup({ theme, toggleTheme }) {
         method: 'GET',
         credentials: 'include',
       });
-
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to get Google auth URL');
-      }
-
+      if (!response.ok) throw new Error(data.message || 'Failed to get Google auth URL');
       window.location.href = data.url;
-
     } catch (err) {
       setError(err.message);
       setIsLoading(false);
     }
   };
 
+  const confirmMismatch =
+    confirmPassword.length > 0 && password !== confirmPassword;
+
   return (
     <div className="relative min-h-screen flex items-center justify-center px-4 transition-colors duration-300 overflow-hidden">
-
-      <div 
+      {/* Background blobs */}
+      <div
         className="absolute inset-0 pointer-events-none"
         style={{
           backgroundImage: `url(https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&q=80)`,
@@ -100,39 +134,35 @@ function Signup({ theme, toggleTheme }) {
           backgroundPosition: 'center',
           filter: 'blur(16px)',
           transform: 'scale(1.1)',
-          opacity: theme === 'dark' ? 0.5 : 0.3
+          opacity: theme === 'dark' ? 0.5 : 0.3,
         }}
-      >
-      </div>
-
-      <div 
+      />
+      <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background: theme === 'dark'
             ? 'linear-gradient(180deg, rgba(20,20,18,0.6), rgba(20,20,18,0.7))'
-            : 'linear-gradient(180deg, rgba(247,247,245,0.3), rgba(247,247,245,0.5))'
+            : 'linear-gradient(180deg, rgba(247,247,245,0.3), rgba(247,247,245,0.5))',
         }}
-      ></div>
-
-      <div 
+      />
+      <div
         className="absolute top-20 right-10 w-64 h-64 rounded-full blur-3xl pointer-events-none"
         style={{
           background: theme === 'dark'
             ? 'radial-gradient(circle, rgba(220,139,110,0.4), transparent)'
-            : 'radial-gradient(circle, rgba(196,106,77,0.3), transparent)'
+            : 'radial-gradient(circle, rgba(196,106,77,0.3), transparent)',
         }}
         aria-hidden="true"
-      ></div>
-
-      <div 
+      />
+      <div
         className="absolute bottom-20 left-10 w-48 h-48 rounded-full blur-3xl pointer-events-none"
         style={{
           background: theme === 'dark'
             ? 'radial-gradient(circle, rgba(231,111,81,0.3), transparent)'
-            : 'radial-gradient(circle, rgba(45,106,79,0.2), transparent)'
+            : 'radial-gradient(circle, rgba(45,106,79,0.2), transparent)',
         }}
         aria-hidden="true"
-      ></div>
+      />
 
       <button
         onClick={toggleTheme}
@@ -142,7 +172,7 @@ function Signup({ theme, toggleTheme }) {
         {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
       </button>
 
-      <div 
+      <div
         className="w-full max-w-md rounded-2xl p-8 relative overflow-hidden z-10"
         style={{
           background: theme === 'dark'
@@ -155,16 +185,16 @@ function Signup({ theme, toggleTheme }) {
             : '1px solid rgba(255,255,255,0.4)',
           boxShadow: theme === 'dark'
             ? '0 25px 60px -15px rgba(0,0,0,0.5)'
-            : '0 25px 60px -15px rgba(0,0,0,0.15)'
+            : '0 25px 60px -15px rgba(0,0,0,0.15)',
         }}
       >
-        <div 
-          className="absolute top-0 left-0 right-0 h-1" 
+        <div
+          className="absolute top-0 left-0 right-0 h-1"
           style={{
             background: 'linear-gradient(90deg, #2D6A4F, #c46a4d, #E76F51)',
-            boxShadow: '0 1px 8px rgba(196,106,77,0.3)'
+            boxShadow: '0 1px 8px rgba(196,106,77,0.3)',
           }}
-        ></div>
+        />
 
         <div className="flex flex-col items-center mb-6 relative z-10">
           <div className="p-2.5 rounded-full bg-gradient-to-br from-[#2D6A4F] to-[#E76F51] text-white shadow-lg shadow-terracotta/20 dark:shadow-dark-terracotta/20 hover:scale-105 transition-transform duration-300">
@@ -223,6 +253,7 @@ function Signup({ theme, toggleTheme }) {
             />
           </div>
 
+          {/* ─── Password ────────────────────────────── */}
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
               Password
@@ -231,9 +262,10 @@ function Signup({ theme, toggleTheme }) {
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Minimum 6 characters"
+                placeholder="Minimum 8 characters"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onFocus={() => setTouchedPassword(true)}
                 className="w-full px-4 py-2.5 pr-12 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white/80 dark:bg-dark-card/80 text-deep-charcoal dark:text-dark-text placeholder:text-warm-grey/60 dark:placeholder:text-dark-text-secondary/60 focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] focus:border-transparent transition-all duration-200"
                 required
               />
@@ -246,8 +278,68 @@ function Signup({ theme, toggleTheme }) {
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
+
+            {/* ─── Strength bar + checklist ──────────── */}
+            {touchedPassword && password.length > 0 && (
+              <div className="mt-3 space-y-2.5">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-warm-grey dark:text-dark-text-secondary">
+                      Password strength
+                    </span>
+                    <span
+                      className="font-medium transition-colors"
+                      style={{ color: strength?.color || '#9CA3AF' }}
+                    >
+                      {strength?.label || '—'}
+                    </span>
+                  </div>
+
+                  <div className="flex gap-1">
+                    {[0, 1, 2, 3, 4].map((i) => (
+                      <div
+                        key={i}
+                        className="h-1.5 flex-1 rounded-full transition-all duration-300"
+                        style={{
+                          backgroundColor:
+                            strengthIndex >= i
+                              ? strength?.bg
+                              : theme === 'dark'
+                              ? 'rgba(255,255,255,0.1)'
+                              : '#E5E7EB',
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-2">
+                  {passwordChecks.map((check) => (
+                    <li
+                      key={check.key}
+                      className="flex items-center gap-1.5 text-xs transition-colors"
+                      style={{
+                        color: check.passed
+                          ? '#16a34a'
+                          : theme === 'dark'
+                          ? '#9CA3AF'
+                          : '#6B7280',
+                      }}
+                    >
+                      {check.passed ? (
+                        <Check className="w-3.5 h-3.5 flex-shrink-0" />
+                      ) : (
+                        <X className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
+                      )}
+                      <span>{check.label}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
+          {/* ─── Confirm Password ────────────────────── */}
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
               Confirm Password
@@ -259,7 +351,11 @@ function Signup({ theme, toggleTheme }) {
                 placeholder="Confirm your password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-2.5 pr-12 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white/80 dark:bg-dark-card/80 text-deep-charcoal dark:text-dark-text placeholder:text-warm-grey/60 dark:placeholder:text-dark-text-secondary/60 focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] focus:border-transparent transition-all duration-200"
+                className={`w-full px-4 py-2.5 pr-12 rounded-lg border bg-white/80 dark:bg-dark-card/80 text-deep-charcoal dark:text-dark-text placeholder:text-warm-grey/60 dark:placeholder:text-dark-text-secondary/60 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
+                  confirmMismatch
+                    ? 'border-red-400 dark:border-red-600 focus:ring-red-500'
+                    : 'border-[#e8eaed] dark:border-dark-border focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51]'
+                }`}
                 required
               />
               <button
@@ -271,11 +367,16 @@ function Signup({ theme, toggleTheme }) {
                 {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
+            {confirmMismatch && (
+              <p className="text-xs text-red-600 dark:text-red-400 mt-1.5">
+                Passwords do not match
+              </p>
+            )}
           </div>
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || !allPassed || confirmMismatch}
             className="w-full py-3 bg-terracotta dark:bg-dark-terracotta text-white font-medium rounded-lg hover:bg-terracotta-hover dark:hover:bg-[#c47050] active:scale-95 transition-all duration-300 hover:scale-[1.02] shadow-lg shadow-terracotta/20 dark:shadow-dark-terracotta/20 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100 touch-action-manipulation"
           >
             {isLoading ? (
