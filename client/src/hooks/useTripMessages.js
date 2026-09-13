@@ -40,7 +40,6 @@ export const useTripMessages = (tripId) => {
       socket.emit('join-trip', tripId);
     });
 
-    // New message arrives
     socket.on('new-message', (message) => {
       setMessages((prev) => {
         if (prev.some((m) => m._id === message._id)) return prev;
@@ -48,14 +47,12 @@ export const useTripMessages = (tripId) => {
       });
     });
 
-    // Message edited or deleted
     socket.on('message-updated', (message) => {
       setMessages((prev) =>
         prev.map((m) => (m._id === message._id ? message : m))
       );
     });
 
-    // Another user marked messages as read
     socket.on('messages-read', ({ userId }) => {
       setMessages((prev) =>
         prev.map((m) =>
@@ -125,8 +122,6 @@ export const useTripMessages = (tripId) => {
   const markAsRead = async () => {
     try {
       await tripService.markMessagesRead(tripId);
-      // socket 'messages-read' will update other clients;
-      // local state updates via the optimistic map below
       setMessages((prev) =>
         prev.map((m) =>
           m.status !== 'read' ? { ...m, status: 'read' } : m

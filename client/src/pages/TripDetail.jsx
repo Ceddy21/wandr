@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { Loader } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useTrip } from '../hooks/useTrip';
 import { useUser } from '../hooks/useUser';
 import { useTripMembers } from '../hooks/useTripMembers';
@@ -19,8 +20,11 @@ import { AddActivityModal } from '../components/trip/modals/AddActivityModal';
 import { CreatePollModal } from '../components/trip/modals/CreatePollModal';
 import { AddMembersModal } from '../components/trip/modals/AddMembersModal';
 import { DeleteConfirmModal } from '../components/trip/modals/DeleteConfirmModal';
+import { ShareTripModal } from '../components/trip/modals/ShareTripModal';
+import { EditTripModal } from '../components/trip/modals/EditTripModal';
 
 const VALID_TABS = ['itinerary', 'expenses', 'chat', 'polls', 'members'];
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 function TripDetail() {
   const { id } = useParams();
@@ -37,7 +41,6 @@ function TripDetail() {
   const pollsHook = useTripPolls(id);
   const messagesHook = useTripMessages(id);
 
-  // ─── Initial tab from ?tab= query param ─────────────────
   const tabFromUrl = searchParams.get('tab');
   const initialTab = VALID_TABS.includes(tabFromUrl) ? tabFromUrl : 'itinerary';
 
@@ -47,19 +50,36 @@ function TripDetail() {
   const [showCreatePoll, setShowCreatePoll] = useState(false);
   const [showAddMembers, setShowAddMembers] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const [showEditTrip, setShowEditTrip] = useState(false);
 
-  // ─── Keep activeTab in sync with the URL ────────────────
   useEffect(() => {
     if (tabFromUrl && VALID_TABS.includes(tabFromUrl) && tabFromUrl !== activeTab) {
       setActiveTab(tabFromUrl);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabFromUrl]);
 
-  // ─── Update URL when user clicks a tab ──────────────────
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setSearchParams({ tab }, { replace: true });
+  };
+
+  const handleUpdateTrip = async (updates) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/trips/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(updates),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to update trip');
+      setTrip(data);
+      toast.success('Trip updated');
+    } catch (err) {
+      toast.error(err.message || 'Failed to update trip');
+      throw err;
+    }
   };
 
   const totalExpenses = expensesHook.expenses.reduce(
@@ -98,6 +118,8 @@ function TripDetail() {
         currentUser={currentUser}
         onDelete={() => setShowDeleteConfirm(true)}
         onAddMembers={() => setShowAddMembers(true)}
+        onShare={() => setShowShare(true)}
+        onEdit={() => setShowEditTrip(true)}
       />
 
       <TripTabs activeTab={activeTab} setActiveTab={handleTabChange} />
@@ -203,6 +225,19 @@ function TripDetail() {
         isSearchingMembers={membersHook.isSearchingMembers}
         onAddMember={membersHook.addMember}
         onRemoveMember={membersHook.removeMember}
+      />
+
+      <ShareTripModal
+        isOpen={showShare}
+        onClose={() => setShowShare(false)}
+        trip={trip}
+      />
+
+      <EditTripModal
+        isOpen={showEditTrip}
+        onClose={() => setShowEditTrip(false)}
+        trip={trip}
+        onSave={handleUpdateTrip}
       />
 
       <DeleteConfirmModal

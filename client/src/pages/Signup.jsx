@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import { Plane, Eye, EyeOff, Hand, Sun, Moon, Check, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-// ─── Password rules ──────────────────────────────────────
 const PASSWORD_RULES = [
   { key: 'length',  label: 'At least 8 characters',  test: (p) => p.length >= 8 },
   { key: 'lower',   label: 'One lowercase letter',   test: (p) => /[a-z]/.test(p) },
@@ -16,11 +15,11 @@ const PASSWORD_RULES = [
 ];
 
 const STRENGTH_LEVELS = [
-  { label: 'Very weak', color: '#dc2626', bg: '#dc2626' },  // red
-  { label: 'Weak',      color: '#f97316', bg: '#f97316' },  // orange
-  { label: 'Fair',      color: '#eab308', bg: '#eab308' },  // yellow
-  { label: 'Good',      color: '#84cc16', bg: '#84cc16' },  // lime
-  { label: 'Strong',    color: '#16a34a', bg: '#16a34a' },  // green
+  { label: 'Very weak', color: '#dc2626', bg: '#dc2626' }, 
+  { label: 'Weak',      color: '#f97316', bg: '#f97316' },  
+  { label: 'Fair',      color: '#eab308', bg: '#eab308' },  
+  { label: 'Good',      color: '#84cc16', bg: '#84cc16' },  
+  { label: 'Strong',    color: '#16a34a', bg: '#16a34a' },  
 ];
 
 function Signup({ theme, toggleTheme }) {
@@ -37,7 +36,6 @@ function Signup({ theme, toggleTheme }) {
   const navigate = useNavigate();
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-  // ─── Password evaluation ─────────────────────────────
   const passwordChecks = useMemo(
     () =>
       PASSWORD_RULES.map((rule) => ({
@@ -50,7 +48,6 @@ function Signup({ theme, toggleTheme }) {
   const passedCount = passwordChecks.filter((c) => c.passed).length;
   const totalRules = PASSWORD_RULES.length;
 
-  // Strength score 0..4 maps to STRENGTH_LEVELS index
   const strengthIndex = useMemo(() => {
     if (password.length === 0) return -1;
     if (passedCount <= 1) return 0;
@@ -63,12 +60,10 @@ function Signup({ theme, toggleTheme }) {
   const strength = strengthIndex >= 0 ? STRENGTH_LEVELS[strengthIndex] : null;
   const allPassed = passedCount === totalRules;
 
-  // ─── Submit ──────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    // Validate password strength
     if (!allPassed) {
       setError('Please meet all password requirements.');
       setTouchedPassword(true);
@@ -125,7 +120,6 @@ function Signup({ theme, toggleTheme }) {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center px-4 transition-colors duration-300 overflow-hidden">
-      {/* Background blobs */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -253,7 +247,6 @@ function Signup({ theme, toggleTheme }) {
             />
           </div>
 
-          {/* ─── Password ────────────────────────────── */}
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
               Password
@@ -279,7 +272,6 @@ function Signup({ theme, toggleTheme }) {
               </button>
             </div>
 
-            {/* ─── Strength bar + checklist ──────────── */}
             {touchedPassword && password.length > 0 && (
               <div className="mt-3 space-y-2.5">
                 <div className="space-y-1.5">
@@ -339,7 +331,6 @@ function Signup({ theme, toggleTheme }) {
             )}
           </div>
 
-          {/* ─── Confirm Password ────────────────────── */}
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
               Confirm Password

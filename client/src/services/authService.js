@@ -1,7 +1,6 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export const authService = {
-  // ─── GET /api/auth/me ──────────────────────────────────
   getMe: async () => {
     const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
       credentials: 'include',
@@ -10,10 +9,9 @@ export const authService = {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.message || 'Failed to load profile');
     }
-    return res.json();          // { user }
+    return res.json();
   },
 
-  // ─── PUT /api/auth/profile ─────────────────────────────
   updateProfile: async ({ name, avatar }) => {
     const res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
       method: 'PUT',
@@ -25,10 +23,9 @@ export const authService = {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.message || 'Failed to update profile');
     }
-    return res.json();          // { message, user }
+    return res.json();
   },
 
-  // ─── POST /api/auth/change-password ────────────────────
   changePassword: async ({ currentPassword, newPassword }) => {
     const res = await fetch(`${API_BASE_URL}/api/auth/change-password`, {
       method: 'POST',
@@ -43,8 +40,42 @@ export const authService = {
     return res.json();
   },
 
-  // ─── POST /api/auth/account/request-delete ─────────────
-  // Step 1: verify password, email a one-time code
+  forgotPassword: async (email) => {
+    const res = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || 'Failed to send reset code');
+    return data;
+  },
+
+  verifyResetCode: async (email, code) => {
+    const res = await fetch(`${API_BASE_URL}/api/auth/verify-reset-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email, code }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || 'Invalid code');
+    return data;
+  },
+
+  resetPassword: async ({ email, code, newPassword }) => {
+    const res = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email, code, newPassword }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || 'Failed to reset password');
+    return data;
+  },
+
   requestAccountDeletion: async (password) => {
     const res = await fetch(`${API_BASE_URL}/api/auth/account/request-delete`, {
       method: 'POST',
@@ -59,8 +90,6 @@ export const authService = {
     return res.json();
   },
 
-  // ─── DELETE /api/auth/account ──────────────────────────
-  // Step 2: verify code, cascade delete everything
   deleteAccount: async (code) => {
     const res = await fetch(`${API_BASE_URL}/api/auth/account`, {
       method: 'DELETE',
@@ -75,7 +104,6 @@ export const authService = {
     return res.json();
   },
 
-  // ─── POST /api/auth/logout ─────────────────────────────
   logout: async () => {
     const res = await fetch(`${API_BASE_URL}/api/auth/logout`, {
       method: 'POST',

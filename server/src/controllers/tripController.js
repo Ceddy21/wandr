@@ -1,26 +1,28 @@
 import Trip from '../models/Trip.js';
 import mongoose from 'mongoose';
+import crypto from 'crypto';
 import User from '../models/User.js';
 import { logTripActivity } from '../utils/logTripActivity.js';
 
-// ═══════════════════════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════════════════════
-
-// Owner OR member can view/add
 const findMemberTrip = (tripId, userId) =>
   Trip.findOne({
     _id: tripId,
     $or: [{ userId }, { members: userId }],
   });
 
-// Owner ONLY (delete, archive, remove member)
+// Owner ONLY (delete, archive, remove member, edit)
 const findOwnedTrip = (tripId, userId) =>
   Trip.findOne({ _id: tripId, userId });
 
-// ═══════════════════════════════════════════════════════════
-// GET
-// ═══════════════════════════════════════════════════════════
+const generateShareCode = () => {
+  const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  const bytes = crypto.randomBytes(6);
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += alphabet[bytes[i] % alphabet.length];
+  }
+  return code;
+};
 
 export const getTrip = async (req, res) => {
   try {
@@ -49,10 +51,6 @@ export const getTrips = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch trips' });
   }
 };
-
-// ═══════════════════════════════════════════════════════════
-// CREATE / DELETE / ARCHIVE
-// ═══════════════════════════════════════════════════════════
 
 export const createTrip = async (req, res) => {
   try {
@@ -87,7 +85,6 @@ export const createTrip = async (req, res) => {
     await trip.save();
     await trip.populate('members', 'name email avatar');
 
-    // ─── Log activity ─────────────────────────────────────
     await logTripActivity({
       userId: req.userId,
       tripId: trip._id,
@@ -101,6 +98,58 @@ export const createTrip = async (req, res) => {
   } catch (error) {
     console.error('Create trip error:', error);
     res.status(500).json({ message: 'Failed to create trip' });
+  }
+};
+
+export const updateTrip = async (req, res) => {
+  try {
+    const trip = await findOwnedTrip(req.params.id, req.userId);
+    if (!trip) {
+      return res.status(404).json({ message: 'Trip not found or you are not the owner' });
+    }
+
+    const { name, destination, startDate, endDate, targetMembers } = req.body;
+
+    if (name !== undefined) {
+      const trimmed = String(name).trim();
+      if (!trimmed) {
+        return res.status(400).json({ message: 'Name cannot be empty' });
+      }
+      trip.name = trimmed;
+    }
+
+    if (destination !== undefined) {
+      const trimmed = String(destination).trim();
+      if (!trimmed) {
+        return res.status(400).json({ message: 'Destination cannot be empty' });
+      }
+      trip.destination = trimmed;
+    }
+
+    if (startDate !== undefined) trip.startDate = startDate;
+    if (endDate !== undefined) trip.endDate = endDate;
+
+    if (targetMembers !== undefined) {
+      const parsed = parseInt(targetMembers, 10);
+      if (!isNaN(parsed) && parsed >= 1) trip.targetMembers = parsed;
+    }
+
+    await trip.save();
+    await trip.populate('members', 'name email avatar');
+
+    await logTripActivity({
+      userId: req.userId,
+      tripId: trip._id,
+      type: 'trip_updated',
+      description: 'updated the trip details',
+      targetId: trip._id,
+      tripName: trip.name,
+    });
+
+    res.json(trip);
+  } catch (error) {
+    console.error('Update trip error:', error);
+    res.status(500).json({ message: 'Failed to update trip' });
   }
 };
 
@@ -129,7 +178,6 @@ export const archiveTrip = async (req, res) => {
     trip.status = 'archived';
     await trip.save();
 
-    // ─── Log activity ─────────────────────────────────────
     await logTripActivity({
       userId: req.userId,
       tripId: trip._id,
@@ -157,7 +205,6 @@ export const unarchiveTrip = async (req, res) => {
     await trip.save();
     await trip.populate('members', 'name email avatar');
 
-    // ─── Log activity ─────────────────────────────────────
     await logTripActivity({
       userId: req.userId,
       tripId: trip._id,
@@ -173,10 +220,6 @@ export const unarchiveTrip = async (req, res) => {
     res.status(500).json({ message: 'Failed to unarchive trip' });
   }
 };
-
-// ═══════════════════════════════════════════════════════════
-// MEMBERS
-// ═══════════════════════════════════════════════════════════
 
 export const addMember = async (req, res) => {
   try {
@@ -196,7 +239,6 @@ export const addMember = async (req, res) => {
     await trip.save();
     await trip.populate('members', 'name email avatar');
 
-    // ─── Log activity (only if newly added) ───────────────
     if (!alreadyMember) {
       const added = await User.findById(userId).select('name');
 
@@ -237,7 +279,6 @@ export const removeMember = async (req, res) => {
     await trip.save();
     await trip.populate('members', 'name email avatar');
 
-    // ─── Log activity (only if actually removed) ──────────
     if (removed) {
       await logTripActivity({
         userId: req.userId,
@@ -253,5 +294,76 @@ export const removeMember = async (req, res) => {
   } catch (error) {
     console.error('Remove member error:', error);
     res.status(500).json({ message: 'Failed to remove member' });
+  }
+};
+
+export const getOrCreateShareCode = async (req, res) => {
+  try {
+    const trip = await findMemberTrip(req.params.id, req.userId);
+    if (!trip) return res.status(404).json({ message: 'Trip not found' });
+
+    // Already has a code — return it
+    if (trip.shareCode) {
+      return res.json({ shareCode: trip.shareCode });
+    }
+
+    let code;
+    let attempts = 0;
+    do {
+      code = generateShareCode();
+      attempts++;
+      if (attempts > 5) {
+        return res
+          .status(500)
+          .json({ message: 'Could not generate code, please try again' });
+      }
+    } while (await Trip.exists({ shareCode: code }));
+
+    trip.shareCode = code;
+    trip.shareCodeCreatedAt = new Date();
+    await trip.save();
+
+    res.json({ shareCode: trip.shareCode });
+  } catch (error) {
+    console.error('Share code error:', error);
+    res.status(500).json({ message: 'Failed to generate share code' });
+  }
+};
+
+export const joinTripByCode = async (req, res) => {
+  try {
+    const code = String(req.params.code).toUpperCase().trim();
+
+    const trip = await Trip.findOne({ shareCode: code });
+    if (!trip) return res.status(404).json({ message: 'Invalid code' });
+
+    const alreadyMember = trip.members.some(
+      (m) => m.toString() === req.userId.toString()
+    );
+
+    if (alreadyMember) {
+      return res.json({
+        message: 'You are already a member',
+        tripId: trip._id,
+      });
+    }
+
+    trip.members.push(req.userId);
+    await trip.save();
+    await trip.populate('members', 'name email avatar');
+
+    await logTripActivity({
+      userId: req.userId,
+      tripId: trip._id,
+      type: 'member_added',
+      description: 'joined the trip via share code',
+      targetId: req.userId,
+      tripName: trip.name,
+    });
+
+    res.json({ message: 'Joined trip', tripId: trip._id });
+  } catch (error) {
+    console.error('Join trip error:', error);
+    res.status(500).json({ message: 'Failed to join trip' });
   }
 };

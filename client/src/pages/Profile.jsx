@@ -23,7 +23,6 @@ function Profile() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
 
-  // ─── Load user from API ─────────────────────────────────
   useEffect(() => {
     let cancelled = false;
 
@@ -43,13 +42,11 @@ function Profile() {
     return () => { cancelled = true; };
   }, []);
 
-  // ─── Wrapper so children call the same sync ─────────────
   const handleUserChange = (updatedUser) => {
     setUser(updatedUser);
-    syncUser(updatedUser);   // ← Header + localStorage update instantly
+    syncUser(updatedUser);   
   };
 
-  // ─── Avatar upload → Cloudinary → save URL ──────────────
   const handleAvatarUpload = async (file) => {
     if (!file) return;
     setUploadingAvatar(true);
@@ -74,7 +71,7 @@ function Profile() {
         avatar: cloudData.secure_url,
       });
 
-      handleUserChange(updated);   // ← sync everywhere
+      handleUserChange(updated);  
       toast.success('Avatar updated!');
     } catch (err) {
       console.error(err);
@@ -84,7 +81,6 @@ function Profile() {
     }
   };
 
-  // ─── Loading / not-found states ─────────────────────────
   if (loadingUser) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-warm-white dark:bg-dark-bg">
@@ -222,7 +218,7 @@ function Profile() {
             <DeleteAccount
               isGoogleUser={user.isGoogleUser}
               onDeleted={() => {
-                syncUser(null);           // ← clear Header state
+                syncUser(null);           
                 navigate('/login');
               }}
             />

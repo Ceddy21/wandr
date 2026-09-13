@@ -12,7 +12,7 @@ const messageSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
-  user: { type: String, required: true },        // sender name (denormalized)
+  user: { type: String, required: true },   
   text: { type: String, default: '' },
   imageUrl: { type: String, default: '' },
   status: {

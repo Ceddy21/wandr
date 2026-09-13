@@ -13,7 +13,6 @@ export const useRecentActivities = (limit = 3) => {
       setLoading(true);
       setError('');
       try {
-        // excludeSelf = true → only other users' activity
         const data = await activityService.getRecent(limit, false);
         if (!cancelled) setActivities(data);
       } catch (err) {

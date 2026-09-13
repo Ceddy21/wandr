@@ -4,7 +4,14 @@ import { ArrowLeft, Calendar, MapPin, Share2, Edit, Trash2, UserPlus, Crown } fr
 import { MemberAvatar } from './MemberAvatar';
 import { StatusBadge } from './StatusBadge';
 
-export const TripInfoHeader = ({ trip, currentUser, onDelete, onAddMembers }) => {
+export const TripInfoHeader = ({
+  trip,
+  currentUser,
+  onDelete,
+  onAddMembers,
+  onShare,
+  onEdit,
+}) => {
   const members = Array.isArray(trip?.members) ? trip.members : [];
   const memberCount = members.length;
 
@@ -26,16 +33,20 @@ export const TripInfoHeader = ({ trip, currentUser, onDelete, onAddMembers }) =>
 
         <div className="flex items-center gap-1">
           <button
+            onClick={onShare}
             className="p-2 rounded-lg hover:bg-terracotta-soft dark:hover:bg-dark-terracotta-soft transition-colors"
             title="Share"
+            aria-label="Share trip"
           >
             <Share2 className="w-4 h-4 text-warm-grey dark:text-dark-text-secondary" />
           </button>
 
           {isOwner && (
             <button
+              onClick={onEdit}
               className="p-2 rounded-lg hover:bg-terracotta-soft dark:hover:bg-dark-terracotta-soft transition-colors"
               title="Edit Trip"
+              aria-label="Edit trip"
             >
               <Edit className="w-4 h-4 text-warm-grey dark:text-dark-text-secondary" />
             </button>
@@ -46,6 +57,7 @@ export const TripInfoHeader = ({ trip, currentUser, onDelete, onAddMembers }) =>
               onClick={onDelete}
               className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
               title="Delete Trip"
+              aria-label="Delete trip"
             >
               <Trash2 className="w-4 h-4 text-red-500" />
             </button>

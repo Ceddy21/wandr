@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Search,
   Filter,
@@ -9,13 +9,20 @@ import {
   MapPin,
   ArrowRight,
   Plus,
+  UserPlus,
+  X,
+  Loader,
+  KeyRound,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import CreateTripModal from '../components/ui/CreateTripModal';
 import { useTrips } from '../hooks/useTrips';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 function TripList() {
-  const { trips, loading, error, createTrip } = useTrips();
+  const navigate = useNavigate();
+  const { trips, loading, error, createTrip, refetch } = useTrips();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -29,6 +36,10 @@ function TripList() {
     endDate: '',
     members: 1,
   });
+
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+  const [joinCode, setJoinCode] = useState('');
+  const [joining, setJoining] = useState(false);
 
   const handleCreateTrip = () => setIsCreateModalOpen(true);
 
@@ -56,6 +67,53 @@ function TripList() {
         endDate: '',
         members: 1,
       });
+    }
+  };
+
+  const handleJoinTrip = async () => {
+    const code = joinCode.trim().toUpperCase();
+
+    if (!code) {
+      toast.error('Please enter a share code');
+      return;
+    }
+    if (code.length !== 6) {
+      toast.error('Share code must be 6 characters');
+      return;
+    }
+
+    setJoining(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/trips/join/${code}`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Invalid code');
+      }
+
+      toast.success(data.message || 'Joined trip!');
+      setIsJoinModalOpen(false);
+      setJoinCode('');
+
+      if (refetch) await refetch();
+
+      if (data.tripId) {
+        navigate(`/trip/${data.tripId}`);
+      }
+    } catch (err) {
+      toast.error(err.message || 'Failed to join trip');
+    } finally {
+      setJoining(false);
+    }
+  };
+
+  const handleJoinKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleJoinTrip();
     }
   };
 
@@ -172,7 +230,14 @@ function TripList() {
             {sortedTrips.length} trip{sortedTrips.length !== 1 ? 's' : ''} found
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => setIsJoinModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-dark-card border border-[#e8eaed] dark:border-dark-border text-deep-charcoal dark:text-dark-text text-sm font-medium rounded-lg hover:border-terracotta dark:hover:border-dark-terracotta hover:text-terracotta dark:hover:text-dark-terracotta transition-all duration-200"
+          >
+            <UserPlus className="w-4 h-4" />
+            Join with Code
+          </button>
           <button
             onClick={handleCreateTrip}
             className="flex items-center gap-2 px-4 py-2 bg-terracotta dark:bg-dark-terracotta text-white text-sm font-medium rounded-lg hover:bg-terracotta-hover dark:hover:bg-[#c47050] transition-all duration-300 hover:scale-105 shadow-lg shadow-terracotta/20 dark:shadow-dark-terracotta/20"
@@ -294,15 +359,23 @@ function TripList() {
           <p className="text-warm-grey dark:text-dark-text-secondary mt-2">
             {searchTerm || filterStatus !== 'all'
               ? 'Try adjusting your search or filters'
-              : 'Create your first trip to get started!'}
+              : 'Create your first trip or join one with a code!'}
           </p>
           {!searchTerm && filterStatus === 'all' && (
-            <button
-              onClick={handleCreateTrip}
-              className="mt-4 px-6 py-2 bg-terracotta text-white rounded-lg hover:bg-terracotta-hover transition-colors"
-            >
-              + Create your first trip
-            </button>
+            <div className="mt-4 flex items-center justify-center gap-3">
+              <button
+                onClick={handleCreateTrip}
+                className="px-6 py-2 bg-terracotta text-white rounded-lg hover:bg-terracotta-hover transition-colors"
+              >
+                + Create your first trip
+              </button>
+              <button
+                onClick={() => setIsJoinModalOpen(true)}
+                className="px-6 py-2 border border-[#e8eaed] dark:border-dark-border text-deep-charcoal dark:text-dark-text rounded-lg hover:border-terracotta dark:hover:border-dark-terracotta transition-colors"
+              >
+                Join with code
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -314,6 +387,100 @@ function TripList() {
         newTrip={newTrip}
         setNewTrip={setNewTrip}
       />
+
+      {isJoinModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+          onClick={() => !joining && setIsJoinModalOpen(false)}
+        >
+          <div
+            className="bg-white dark:bg-dark-card rounded-2xl w-full max-w-md shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e8eaed] dark:border-dark-border">
+              <div className="flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-terracotta dark:text-dark-terracotta" />
+                <h2 className="text-lg font-semibold text-deep-charcoal dark:text-dark-text">
+                  Join a trip
+                </h2>
+              </div>
+              <button
+                onClick={() => setIsJoinModalOpen(false)}
+                disabled={joining}
+                className="p-1.5 rounded-lg hover:bg-[#F0F2F5] dark:hover:bg-dark-card/60 transition-colors disabled:opacity-50"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5 text-warm-grey dark:text-dark-text-secondary" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-warm-grey dark:text-dark-text-secondary">
+                Ask the trip owner for a 6-character share code, then enter it below.
+              </p>
+
+              <div>
+                <label className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
+                  Share code
+                </label>
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-grey dark:text-dark-text-secondary" />
+                  <input
+                    type="text"
+                    value={joinCode}
+                    onChange={(e) =>
+                      setJoinCode(
+                        e.target.value
+                          .toUpperCase()
+                          .replace(/[^A-Z0-9]/g, '')
+                          .slice(0, 6)
+                      )
+                    }
+                    onKeyDown={handleJoinKeyDown}
+                    placeholder="ABC123"
+                    maxLength={6}
+                    autoFocus
+                    disabled={joining}
+                    className="w-full px-4 py-3 pl-10 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text text-center font-mono text-lg tracking-[0.4em] uppercase focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] transition-all disabled:opacity-60"
+                  />
+                </div>
+                <p className="text-xs text-warm-grey dark:text-dark-text-secondary mt-1.5">
+                  {joinCode.length}/6 characters
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  onClick={() => setIsJoinModalOpen(false)}
+                  disabled={joining}
+                  className="flex-1 px-4 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border text-deep-charcoal dark:text-dark-text hover:bg-[#F0F2F5] dark:hover:bg-dark-card/60 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleJoinTrip}
+                  disabled={joining || joinCode.length !== 6}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-terracotta dark:bg-dark-terracotta text-white font-medium hover:bg-terracotta-hover dark:hover:bg-[#c47050] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                >
+                  {joining ? (
+                    <>
+                      <Loader className="w-4 h-4 animate-spin" />
+                      Joining...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-4 h-4" />
+                      Join trip
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

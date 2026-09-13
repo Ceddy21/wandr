@@ -62,7 +62,6 @@ export const addPoll = async (req, res) => {
 
     await poll.save();
 
-    // ─── Log activity ─────────────────────────────────────
     await logTripActivity({
       userId: req.userId,
       tripId: req.params.id,
@@ -102,7 +101,6 @@ export const deletePoll = async (req, res) => {
     const pollIdRef = poll._id;
     await poll.deleteOne();
 
-    // ─── Log activity ─────────────────────────────────────
     await logTripActivity({
       userId: req.userId,
       tripId: req.params.id,
@@ -156,7 +154,6 @@ export const addPollChoice = async (req, res) => {
 
     await poll.save();
 
-    // ─── Log activity ─────────────────────────────────────
     await logTripActivity({
       userId: req.userId,
       tripId: req.params.id,
@@ -202,7 +199,6 @@ export const deletePollChoice = async (req, res) => {
 
     await poll.save();
 
-    // ─── Log activity ─────────────────────────────────────
     await logTripActivity({
       userId: req.userId,
       tripId: req.params.id,

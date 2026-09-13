@@ -97,7 +97,6 @@ export const TripList = ({
             )}
 
             <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-[#e8eaed] dark:border-dark-border">
-              {/* Left: Counts */}
               <div className="flex items-center gap-3 text-xs text-warm-grey dark:text-dark-text-secondary">
                 <span className="flex items-center gap-1">
                   <Users className="w-3.5 h-3.5" />

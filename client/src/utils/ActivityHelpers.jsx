@@ -16,35 +16,28 @@ import {
   MessageCircle,
 } from 'lucide-react';
 
-// ─── Icon ────────────────────────────────────────────────
 export function getActivityIcon(type, className = 'w-4 h-4') {
   switch (type) {
-    // Expenses
     case 'expense_added':   return <DollarSign className={className} />;
     case 'expense_updated': return <Pencil className={className} />;
     case 'expense_deleted': return <Trash2 className={className} />;
 
-    // Members
     case 'member_added':    return <UserPlus className={className} />;
     case 'member_removed':  return <UserMinus className={className} />;
 
-    // Itinerary
     case 'activity_added':   return <MapPin className={className} />;
     case 'activity_updated': return <Pencil className={className} />;
     case 'activity_deleted': return <Trash2 className={className} />;
 
-    // Trips
     case 'trip_created':    return <Plane className={className} />;
     case 'trip_archived':   return <Archive className={className} />;
     case 'trip_unarchived': return <ArchiveRestore className={className} />;
 
-    // Polls
     case 'poll_created':        return <FileText className={className} />;
     case 'poll_deleted':        return <Trash2 className={className} />;
     case 'poll_option_added':   return <PlusCircle className={className} />;
     case 'poll_option_deleted': return <MinusCircle className={className} />;
 
-    // Chat
     case 'message_sent':    return <MessageCircle className={className} />;
     case 'message_edited':  return <Pencil className={className} />;
     case 'message_deleted': return <Trash2 className={className} />;
@@ -53,7 +46,6 @@ export function getActivityIcon(type, className = 'w-4 h-4') {
   }
 }
 
-// ─── Color ───────────────────────────────────────────────
 export function getActivityColor(type) {
   // Broad rules first
   if (type.endsWith('_deleted')) {
@@ -79,14 +71,12 @@ export function getActivityColor(type) {
   }
 }
 
-// ─── Link ────────────────────────────────────────────────
 export function getActivityLink(activity) {
   const { tripId, type } = activity;
   if (!tripId) return null;
 
   const base = `/trip/${tripId}`;
 
-  // Deleted items have no target; just land on the trip page
   if (type.endsWith('_deleted')) return base;
 
   switch (type) {
@@ -113,7 +103,6 @@ export function getActivityLink(activity) {
   }
 }
 
-// ─── Time formatter ──────────────────────────────────────
 export function formatRelativeTime(date) {
   const diff = Date.now() - new Date(date).getTime();
   const minutes = Math.floor(diff / 60000);

@@ -48,7 +48,6 @@ export const addExpense = async (req, res) => {
 
     await expense.save();
 
-    // ─── Log activity ─────────────────────────────────────
     await logTripActivity({
       userId: req.userId,
       tripId: req.params.id,
@@ -89,7 +88,6 @@ export const updateExpense = async (req, res) => {
 
     await expense.save();
 
-    // ─── Log activity ─────────────────────────────────────
     await logTripActivity({
       userId: req.userId,
       tripId: req.params.id,
@@ -120,7 +118,6 @@ export const deleteExpense = async (req, res) => {
     });
     if (!expense) return res.status(404).json({ message: 'Expense not found' });
 
-    // ─── Log activity ─────────────────────────────────────
     await logTripActivity({
       userId: req.userId,
       tripId: req.params.id,

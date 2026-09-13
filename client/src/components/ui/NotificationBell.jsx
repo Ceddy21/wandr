@@ -14,7 +14,6 @@ const NotificationBell = () => {
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
-  // Pull real data — same hook used by /notifications page
   const {
     allActivities,
     loading,
@@ -23,10 +22,8 @@ const NotificationBell = () => {
     markAllRead,
   } = useNotifications({ filter: 'all', page: 1, perPage: 5 });
 
-  // Show only the 5 most recent
   const preview = allActivities.slice(0, 5);
 
-  // ─── Close on outside click ─────────────────────────────
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -41,7 +38,6 @@ const NotificationBell = () => {
     };
   }, [isOpen]);
 
-  // ─── Close on Escape ────────────────────────────────────
   useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === 'Escape') setIsOpen(false);
@@ -68,7 +64,6 @@ const NotificationBell = () => {
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* ─── Bell button ─────────────────────────────────── */}
       <button
         onClick={() => setIsOpen((prev) => !prev)}
         className="relative p-2 rounded-lg hover:bg-[#F0F2F5] dark:hover:bg-dark-card/50 transition-colors"
@@ -82,7 +77,6 @@ const NotificationBell = () => {
         )}
       </button>
 
-      {/* ─── Dropdown ────────────────────────────────────── */}
       {isOpen && (
         <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-dark-card border border-[#e8eaed] dark:border-dark-border rounded-xl shadow-xl overflow-hidden z-50">
           {/* Header */}
@@ -100,7 +94,6 @@ const NotificationBell = () => {
             )}
           </div>
 
-          {/* Body */}
           <div className="max-h-72 overflow-y-auto divide-y divide-[#e8eaed] dark:divide-dark-border">
             {loading ? (
               <div className="p-6 flex justify-center">
@@ -175,7 +168,6 @@ const NotificationBell = () => {
             )}
           </div>
 
-          {/* Footer */}
           <div className="border-t border-[#e8eaed] dark:border-dark-border px-4 py-2.5 text-center">
             <Link
               to="/notifications"

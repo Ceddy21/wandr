@@ -14,6 +14,9 @@ import {
   googleLogin,
   getGoogleAuthUrl,
   googleCallback,
+  forgotPassword,
+  verifyResetCode,
+  resetPassword,
 } from '../controllers/authController.js';
 
 const router = express.Router();
@@ -37,5 +40,8 @@ router.delete('/account', protect, deleteAccount);
 router.post('/change-password', protect, changePassword);
 router.post('/account/request-delete', protect, requestAccountDeletion);
 router.delete('/account', protect, deleteAccount);
+router.post('/forgot-password', forgotPassword);
+router.post('/verify-reset-code', verifyResetCode);
+router.post('/reset-password', resetPassword);
 
 export default router;

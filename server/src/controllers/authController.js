@@ -6,11 +6,11 @@ import { generateVerificationCode } from '../utils/generateCode.js';
 import {
   sendVerificationEmail,
   sendAccountDeletionEmail,
+  sendPasswordResetEmail,
 } from '../utils/sendEmail.js';
 import { registerSchema, loginSchema, verifySchema } from '../utils/validator.js';
 import dotenv from "dotenv";
 
-// ─── Models for cascade delete ─────────────────────────
 import Trip from '../models/Trip.js';
 import Message from '../models/Message.js';
 import Expense from '../models/Expense.js';
@@ -25,10 +25,6 @@ const googleClient = new OAuth2Client(
   process.env.GMAIL_CLIENT_SECRET,
   `${process.env.CLIENT_URL || 'http://localhost:5173'}/google-callback`
 );
-
-// ═══════════════════════════════════════════════════════════
-// REGISTER / VERIFY
-// ═══════════════════════════════════════════════════════════
 
 export const register = async (req, res) => {
   try {
@@ -108,10 +104,6 @@ export const verify = async (req, res) => {
   }
 };
 
-// ═══════════════════════════════════════════════════════════
-// LOGIN / LOGOUT / ME
-// ═══════════════════════════════════════════════════════════
-
 export const login = async (req, res) => {
   try {
     const { email, password } = loginSchema.parse(req.body);
@@ -175,7 +167,7 @@ export const logout = async (req, res) => {
 export const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.userId).select(
-      '-passwordHash -verificationCode -deleteAccountCode'
+      '-passwordHash -verificationCode -verificationCodeExpires -deleteAccountCode -deleteAccountCodeExpires -resetCode -resetCodeExpires'
     );
     res.json({ user });
   } catch (error) {
@@ -183,10 +175,6 @@ export const getMe = async (req, res) => {
     res.status(500).json({ message: 'Server error.' });
   }
 };
-
-// ═══════════════════════════════════════════════════════════
-// PROFILE
-// ═══════════════════════════════════════════════════════════
 
 export const updateProfile = async (req, res) => {
   try {
@@ -229,18 +217,128 @@ export const updateProfile = async (req, res) => {
   }
 };
 
-// ═══════════════════════════════════════════════════════════
-// ACCOUNT DELETION (2-step: request code → confirm)
-// ═══════════════════════════════════════════════════════════
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
 
-// ─── POST /api/auth/account/request-delete ──────────────
-// Step 1: verify password, email a one-time code
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required.' });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+
+    if (!user) {
+      return res.status(404).json({
+        message: 'No Wandr account found with that email.',
+      });
+    }
+
+    if (user.isGoogleUser) {
+      return res.status(400).json({
+        message: 'This account uses Google sign-in. Reset your password through Google.',
+      });
+    }
+
+    if (
+      user.resetCodeExpires &&
+      user.resetCodeExpires > new Date(Date.now() + 9 * 60 * 1000)
+    ) {
+      return res.status(429).json({
+        message: 'Please wait before requesting another code.',
+      });
+    }
+
+    const code = generateVerificationCode();
+    const codeExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+    user.resetCode = code;
+    user.resetCodeExpires = codeExpires;
+    await user.save();
+
+    await sendPasswordResetEmail(user.email, code);
+
+    res.json({ message: 'Reset code sent to your email.' });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ message: 'Server error.' });
+  }
+};
+
+export const verifyResetCode = async (req, res) => {
+  try {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+      return res.status(400).json({ message: 'Email and code are required.' });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid code.' });
+    }
+
+    if (!user.resetCode || user.resetCode !== code) {
+      return res.status(400).json({ message: 'Invalid code.' });
+    }
+
+    if (!user.resetCodeExpires || user.resetCodeExpires < new Date()) {
+      return res.status(400).json({ message: 'Code expired. Request a new one.' });
+    }
+
+    res.json({ valid: true });
+  } catch (error) {
+    console.error('Verify reset code error:', error);
+    res.status(500).json({ message: 'Server error.' });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { email, code, newPassword } = req.body;
+
+    if (!email || !code || !newPassword) {
+      return res.status(400).json({
+        message: 'Email, code, and new password are required.',
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        message: 'Password must be at least 8 characters.',
+      });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid request.' });
+    }
+
+    if (!user.resetCode || user.resetCode !== code) {
+      return res.status(400).json({ message: 'Invalid code.' });
+    }
+
+    if (!user.resetCodeExpires || user.resetCodeExpires < new Date()) {
+      return res.status(400).json({ message: 'Code expired. Request a new one.' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.passwordHash = await bcrypt.hash(newPassword, salt);
+    user.resetCode = null;
+    user.resetCodeExpires = null;
+    await user.save();
+
+    res.json({ message: 'Password reset successful. You can now log in.' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ message: 'Server error.' });
+  }
+};
+
 export const requestAccountDeletion = async (req, res) => {
   try {
     const user = await User.findById(req.userId);
     if (!user) return res.status(404).json({ message: 'User not found.' });
 
-    // Password confirmation for non-Google users
     if (!user.isGoogleUser) {
       const { password } = req.body || {};
       if (!password) {
@@ -252,7 +350,6 @@ export const requestAccountDeletion = async (req, res) => {
       }
     }
 
-    // Simple rate-limit: block re-requests within 60 seconds
     if (
       user.deleteAccountCodeExpires &&
       user.deleteAccountCodeExpires > new Date(Date.now() + 9 * 60 * 1000)
@@ -278,8 +375,6 @@ export const requestAccountDeletion = async (req, res) => {
   }
 };
 
-// ─── DELETE /api/auth/account ───────────────────────────
-// Step 2: verify code, then cascade delete everything
 export const deleteAccount = async (req, res) => {
   try {
     const { code } = req.body || {};
@@ -306,30 +401,25 @@ export const deleteAccount = async (req, res) => {
 
     const userId = user._id;
 
-    // ─── Cascade delete ───────────────────────────────────
     const ownedTrips = await Trip.find({ userId }).select('_id');
     const ownedTripIds = ownedTrips.map((t) => t._id);
 
     await Promise.all([
-      // Children of owned trips
       Message.deleteMany({ tripId: { $in: ownedTripIds } }),
       Expense.deleteMany({ tripId: { $in: ownedTripIds } }),
       Itinerary.deleteMany({ tripId: { $in: ownedTripIds } }),
       Poll.deleteMany({ tripId: { $in: ownedTripIds } }),
       Activity.deleteMany({ tripId: { $in: ownedTripIds } }),
 
-      // User's contributions to any trip
       Message.deleteMany({ userId }),
       Expense.deleteMany({ userId }),
       Itinerary.deleteMany({ userId }),
       Poll.deleteMany({ createdById: userId }),
       Activity.deleteMany({ userId }),
 
-      // Remove user from other people's trips / activity read states
       Trip.updateMany({ members: userId }, { $pull: { members: userId } }),
       Activity.updateMany({ readBy: userId }, { $pull: { readBy: userId } }),
 
-      // Delete owned trips themselves
       Trip.deleteMany({ userId }),
     ]);
 
@@ -342,10 +432,6 @@ export const deleteAccount = async (req, res) => {
     res.status(500).json({ message: 'Server error.' });
   }
 };
-
-// ═══════════════════════════════════════════════════════════
-// RESEND VERIFICATION / CHANGE PASSWORD
-// ═══════════════════════════════════════════════════════════
 
 export const resendVerification = async (req, res) => {
   try {
@@ -406,10 +492,6 @@ export const changePassword = async (req, res) => {
     res.status(500).json({ message: 'Server error.' });
   }
 };
-
-// ═══════════════════════════════════════════════════════════
-// GOOGLE OAUTH
-// ═══════════════════════════════════════════════════════════
 
 export const googleLogin = async (req, res) => {
   try {

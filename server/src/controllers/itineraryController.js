@@ -26,7 +26,7 @@ export const getItinerary = async (req, res) => {
 
 export const addItinerary = async (req, res) => {
   try {
-    const { day, time, title, type } = req.body;
+    const { day, time, title, type, completed } = req.body;
 
     if (!day || !time || !title) {
       return res.status(400).json({ message: 'Day, time, and title are required' });
@@ -42,11 +42,11 @@ export const addItinerary = async (req, res) => {
       time,
       title,
       type: type || 'activity',
+      completed: completed === true,
     });
 
     await item.save();
 
-    // ─── Log activity ─────────────────────────────────────
     await logTripActivity({
       userId: req.userId,
       tripId: req.params.id,
@@ -66,7 +66,7 @@ export const addItinerary = async (req, res) => {
 export const updateItinerary = async (req, res) => {
   try {
     const { itineraryId } = req.params;
-    const { day, time, title, type } = req.body;
+    const { day, time, title, type, completed } = req.body;
 
     const trip = await verifyTripAccess(req.params.id, req.userId);
     if (!trip) return res.status(404).json({ message: 'Trip not found' });
@@ -77,22 +77,25 @@ export const updateItinerary = async (req, res) => {
     });
     if (!item) return res.status(404).json({ message: 'Itinerary item not found' });
 
+    const titleChanged = title !== undefined && title !== item.title;
+
     if (day !== undefined) item.day = parseInt(day);
     if (time !== undefined) item.time = time;
     if (title !== undefined) item.title = title;
     if (type !== undefined) item.type = type;
+    if (completed !== undefined) item.completed = completed;
 
     await item.save();
-
-    // ─── Log activity ─────────────────────────────────────
-    await logTripActivity({
-      userId: req.userId,
-      tripId: req.params.id,
-      type: 'activity_updated',
-      description: `updated itinerary item "${item.title}"`,
-      targetId: item._id,
-      tripName: trip.name,
-    });
+    if (titleChanged || day !== undefined || time !== undefined || type !== undefined) {
+      await logTripActivity({
+        userId: req.userId,
+        tripId: req.params.id,
+        type: 'activity_updated',
+        description: `updated itinerary item "${item.title}"`,
+        targetId: item._id,
+        tripName: trip.name,
+      });
+    }
 
     res.json(item);
   } catch (error) {
@@ -114,7 +117,6 @@ export const deleteItinerary = async (req, res) => {
     });
     if (!item) return res.status(404).json({ message: 'Itinerary item not found' });
 
-    // ─── Log activity ─────────────────────────────────────
     await logTripActivity({
       userId: req.userId,
       tripId: req.params.id,

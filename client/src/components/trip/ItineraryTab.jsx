@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import {
   Plus, Clock, MapPin, Plane, Hotel, Coffee,
   Calendar as CalendarIcon, Pencil, Trash2,
+  Check, Loader,
 } from 'lucide-react';
 import { EditActivityModal } from './modals/EditActivityModal';
 import { ConfirmModal } from './modals/ConfirmModals';
 
 function ItineraryTab({
   trip,
-  itinerary = [],             
+  itinerary = [],
   onAddActivity,
   onUpdateActivity,
   onDeleteActivity,
@@ -16,6 +17,7 @@ function ItineraryTab({
   const [expandedDay, setExpandedDay] = useState(null);
   const [editingActivity, setEditingActivity] = useState(null);
   const [deletingActivity, setDeletingActivity] = useState(null);
+  const [togglingId, setTogglingId] = useState(null);
 
   const groupedActivities = itinerary.reduce((groups, item) => {
     const day = `Day ${item.day}`;
@@ -44,6 +46,18 @@ function ItineraryTab({
 
   const toggleDay = (day) => setExpandedDay(expandedDay === day ? null : day);
 
+  const handleToggleComplete = async (activity) => {
+    if (togglingId) return; 
+    setTogglingId(activity._id);
+    try {
+      await onUpdateActivity(activity._id, {
+        completed: !activity.completed,
+      });
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
   const handleConfirmDelete = async () => {
     if (!deletingActivity) return;
     await onDeleteActivity(deletingActivity._id);
@@ -57,6 +71,8 @@ function ItineraryTab({
       setEditingActivity(null);
     }
   };
+
+  const countCompleted = (items) => items.filter((i) => i.completed).length;
 
   return (
     <div>
@@ -79,75 +95,121 @@ function ItineraryTab({
         </div>
       ) : (
         <div className="space-y-3">
-          {Object.entries(groupedActivities).map(([day, dayActivities]) => (
-            <div
-              key={day}
-              className="border border-[#e8eaed] dark:border-dark-border rounded-lg overflow-hidden"
-            >
-              <button
-                onClick={() => toggleDay(day)}
-                className="w-full px-4 py-3 flex items-center justify-between bg-terracotta-soft/30 dark:bg-dark-terracotta-soft/30 hover:bg-terracotta-soft/50 dark:hover:bg-dark-terracotta-soft/50 transition-colors"
+          {Object.entries(groupedActivities).map(([day, dayActivities]) => {
+            const done = countCompleted(dayActivities);
+            const total = dayActivities.length;
+
+            return (
+              <div
+                key={day}
+                className="border border-[#e8eaed] dark:border-dark-border rounded-lg overflow-hidden"
               >
-                <div className="flex items-center gap-2">
-                  <CalendarIcon className="w-4 h-4 text-terracotta dark:text-dark-terracotta" />
-                  <span className="font-medium text-deep-charcoal dark:text-dark-text">
-                    {day}
+                <button
+                  onClick={() => toggleDay(day)}
+                  className="w-full px-4 py-3 flex items-center justify-between bg-terracotta-soft/30 dark:bg-dark-terracotta-soft/30 hover:bg-terracotta-soft/50 dark:hover:bg-dark-terracotta-soft/50 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <CalendarIcon className="w-4 h-4 text-terracotta dark:text-dark-terracotta" />
+                    <span className="font-medium text-deep-charcoal dark:text-dark-text">
+                      {day}
+                    </span>
+                    <span className="text-xs text-warm-grey dark:text-dark-text-secondary">
+                      ({total} {total === 1 ? 'activity' : 'activities'}
+                      {done > 0 && ` · ${done}/${total} done`})
+                    </span>
+                  </div>
+                  <span className="text-warm-grey dark:text-dark-text-secondary">
+                    {expandedDay === day ? '▲' : '▼'}
                   </span>
-                  <span className="text-xs text-warm-grey dark:text-dark-text-secondary">
-                    ({dayActivities.length} activities)
-                  </span>
-                </div>
-                <span className="text-warm-grey dark:text-dark-text-secondary">
-                  {expandedDay === day ? '▲' : '▼'}
-                </span>
-              </button>
+                </button>
 
-              {expandedDay === day && (
-                <div className="divide-y divide-[#e8eaed] dark:divide-dark-border">
-                  {dayActivities.map((activity) => (
-                    <div
-                      key={activity._id}
-                      className="flex items-start gap-3 px-4 py-3 hover:bg-[#F8F9FA] dark:hover:bg-dark-card/50 transition-colors group"
-                    >
-                      <div className={`p-2 rounded-lg ${getTypeColor(activity.type)}`}>
-                        {getTypeIcon(activity.type)}
-                      </div>
+                {expandedDay === day && (
+                  <div className="divide-y divide-[#e8eaed] dark:divide-dark-border">
+                    {dayActivities.map((activity) => {
+                      const isDone = !!activity.completed;
+                      const isToggling = togglingId === activity._id;
 
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-deep-charcoal dark:text-dark-text">
-                          {activity.title}
-                        </p>
-                        <div className="flex items-center gap-3 text-xs text-warm-grey dark:text-dark-text-secondary mt-1">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {activity.time}
-                          </span>
-                          <span className="capitalize">{activity.type}</span>
+                      return (
+                        <div
+                          key={activity._id}
+                          className={`flex items-start gap-3 px-4 py-3 hover:bg-[#F8F9FA] dark:hover:bg-dark-card/50 transition-colors group ${
+                            isDone ? 'opacity-70' : ''
+                          }`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleToggleComplete(activity)}
+                            disabled={isToggling}
+                            aria-label={
+                              isDone ? 'Mark as not completed' : 'Mark as completed'
+                            }
+                            className={`flex-shrink-0 mt-1.5 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
+                              isDone
+                                ? 'bg-terracotta dark:bg-dark-terracotta border-terracotta dark:border-dark-terracotta'
+                                : 'bg-transparent border-[#d1d5db] dark:border-dark-border hover:border-terracotta dark:hover:border-dark-terracotta'
+                            } ${
+                              isToggling
+                                ? 'opacity-50 cursor-wait'
+                                : 'cursor-pointer'
+                            }`}
+                          >
+                            {isToggling ? (
+                              <Loader className="w-3 h-3 animate-spin text-white" />
+                            ) : isDone ? (
+                              <Check
+                                className="w-3 h-3 text-white"
+                                strokeWidth={3}
+                              />
+                            ) : null}
+                          </button>
+
+                          <div className={`p-2 rounded-lg flex-shrink-0 ${getTypeColor(activity.type)}`}>
+                            {getTypeIcon(activity.type)}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <p
+                              className={`text-sm font-medium transition-all ${
+                                isDone
+                                  ? 'line-through text-warm-grey dark:text-dark-text-secondary'
+                                  : 'text-deep-charcoal dark:text-dark-text'
+                              }`}
+                            >
+                              {activity.title}
+                            </p>
+                            <div className="flex items-center gap-3 text-xs text-warm-grey dark:text-dark-text-secondary mt-1">
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {activity.time}
+                              </span>
+                              <span className="capitalize">{activity.type}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => setEditingActivity(activity)}
+                              className="p-1.5 rounded-lg text-warm-grey dark:text-dark-text-secondary hover:bg-terracotta-soft dark:hover:bg-dark-terracotta-soft hover:text-terracotta transition-colors"
+                              title="Edit"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setDeletingActivity(activity)}
+                              className="p-1.5 rounded-lg text-warm-grey dark:text-dark-text-secondary hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-500 transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-
-                      <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => setEditingActivity(activity)}
-                          className="p-1.5 rounded-lg text-warm-grey dark:text-dark-text-secondary hover:bg-terracotta-soft dark:hover:bg-dark-terracotta-soft hover:text-terracotta transition-colors"
-                          title="Edit"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => setDeletingActivity(activity)}
-                          className="p-1.5 rounded-lg text-warm-grey dark:text-dark-text-secondary hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-500 transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 

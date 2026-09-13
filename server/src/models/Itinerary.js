@@ -21,6 +21,11 @@ const itinerarySchema = new mongoose.Schema({
     default: 'activity',
   },
   createdAt: { type: Date, default: Date.now },
+
+  completed: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 export default mongoose.model('Itinerary', itinerarySchema);

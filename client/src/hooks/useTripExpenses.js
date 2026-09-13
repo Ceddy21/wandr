@@ -67,7 +67,6 @@ export const useTripExpenses = (tripId, trip) => {
         date: newExpense.date,
       });
 
-      // Prepend to local list
       setExpenses((prev) => [created, ...prev]);
 
       setNewExpense({

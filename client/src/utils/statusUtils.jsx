@@ -13,7 +13,6 @@ export const getStatusColor = (status) => {
   }
 };
 
-// ─── Status Label ────────────────────────────────────────
 export const getStatusLabel = (status) => {
   switch (status) {
     case 'upcoming':
@@ -22,7 +21,7 @@ export const getStatusLabel = (status) => {
       return 'Ongoing';
     case 'completed':
       return 'Completed';
-    case 'archived':                                   // ← ADD
+    case 'archived':                                  
       return 'Archived';
     default:
       return 'Unknown';

@@ -2,10 +2,6 @@ import User from '../models/User.js';
 import Trip from '../models/Trip.js';
 import { logActivity } from './logActivity.js';
 
-/**
- * Derive a display name from a User document.
- * Priority: name → email prefix → "Someone"
- */
 function displayName(user) {
   if (!user) return 'Someone';
   if (user.name && user.name.trim()) return user.name.trim();

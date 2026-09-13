@@ -33,7 +33,7 @@ const EditProfileForm = ({ user, onUserChange }) => {
         avatar: user.avatar,
       });
 
-      onUserChange(updated);       // ← parent updates state + localStorage + event
+      onUserChange(updated);
       toast.success('Profile updated');
     } catch (err) {
       toast.error(err.message || 'Failed to update profile');

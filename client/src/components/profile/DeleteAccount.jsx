@@ -6,21 +6,16 @@ import { authService } from '../../services/authService';
 const CONFIRM_PHRASE = 'DELETE';
 
 const DeleteAccount = ({ isGoogleUser, onDeleted }) => {
-  // ─── Step state ───────────────────────────────────────
-  const [step, setStep] = useState('confirm'); // 'confirm' | 'verify'
+  const [step, setStep] = useState('confirm'); 
 
-  // ─── Step 1 state ─────────────────────────────────────
   const [confirmText, setConfirmText] = useState('');
   const [password, setPassword] = useState('');
 
-  // ─── Step 2 state ─────────────────────────────────────
   const [code, setCode] = useState('');
 
-  // ─── Loading flags ────────────────────────────────────
   const [sending, setSending] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // ─── Step 1: send verification code ───────────────────
   const canSendCode =
     confirmText === CONFIRM_PHRASE &&
     (isGoogleUser || password.length > 0) &&
@@ -42,7 +37,6 @@ const DeleteAccount = ({ isGoogleUser, onDeleted }) => {
     }
   };
 
-  // ─── Step 2: confirm with code ────────────────────────
   const canDelete = code.trim().length >= 4 && !deleting;
 
   const handleConfirmDelete = async () => {
@@ -60,7 +54,6 @@ const DeleteAccount = ({ isGoogleUser, onDeleted }) => {
 
   return (
     <div className="max-w-md space-y-4">
-      {/* ─── Warning banner ──────────────────────────────── */}
       <div className="flex items-start gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
         <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
         <div className="text-sm text-red-800 dark:text-red-300">
@@ -72,9 +65,6 @@ const DeleteAccount = ({ isGoogleUser, onDeleted }) => {
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════
-          STEP 1 — Confirm intent, request code
-         ═══════════════════════════════════════════════════ */}
       {step === 'confirm' && (
         <>
           {!isGoogleUser && (
@@ -120,9 +110,6 @@ const DeleteAccount = ({ isGoogleUser, onDeleted }) => {
         </>
       )}
 
-      {/* ═══════════════════════════════════════════════════
-          STEP 2 — Enter code, confirm deletion
-         ═══════════════════════════════════════════════════ */}
       {step === 'verify' && (
         <>
           <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-sm text-blue-800 dark:text-blue-300">

@@ -8,7 +8,6 @@ const getUserTripIds = async (userId) => {
   return trips.map((t) => t._id);
 };
 
-// Derive a display name from a possibly-populated user doc
 const resolveName = (user, fallback) => {
   if (user && typeof user === 'object') {
     if (user.name && user.name.trim()) return user.name.trim();
@@ -19,11 +18,9 @@ const resolveName = (user, fallback) => {
     : 'Someone';
 };
 
-// Shape activity for the frontend, always using populated user if available
 const shapeActivity = (activity) => {
   const obj = activity.toObject ? activity.toObject() : activity;
 
-  // userId may be an ObjectId or a populated User object
   const populatedUser =
     obj.userId && typeof obj.userId === 'object' && obj.userId.email
       ? obj.userId
@@ -44,7 +41,6 @@ const withReadFlag = (activities, userId) =>
     return obj;
   });
 
-// ─── GET /api/activities ─────────────────────────────────
 export const getActivities = async (req, res) => {
   try {
     const { tripId, type, limit = 100, excludeSelf } = req.query;
@@ -77,7 +73,6 @@ export const getActivities = async (req, res) => {
   }
 };
 
-// ─── GET /api/activities/recent ──────────────────────────
 export const getRecentActivities = async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit, 10) || 3, 20);
@@ -100,7 +95,6 @@ export const getRecentActivities = async (req, res) => {
   }
 };
 
-// ─── GET /api/activities/trips ───────────────────────────
 export const getActivityTrips = async (req, res) => {
   try {
     const trips = await Trip.find({
@@ -116,7 +110,6 @@ export const getActivityTrips = async (req, res) => {
   }
 };
 
-// ─── PATCH /api/activities/:id/read ──────────────────────
 export const markActivityRead = async (req, res) => {
   try {
     const activity = await Activity.findById(req.params.id);
@@ -140,7 +133,6 @@ export const markActivityRead = async (req, res) => {
   }
 };
 
-// ─── PATCH /api/activities/read-all ──────────────────────
 export const markAllActivitiesRead = async (req, res) => {
   try {
     const tripIds = await getUserTripIds(req.userId);

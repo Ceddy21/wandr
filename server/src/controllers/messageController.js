@@ -52,7 +52,6 @@ export const addMessage = async (req, res) => {
 
     await message.save();
 
-    // ─── Log activity (no message text — just that it happened) ─
     await logTripActivity({
       userId: req.userId,
       tripId: req.params.id,
@@ -98,7 +97,6 @@ export const editMessage = async (req, res) => {
     message.edited = true;
     await message.save();
 
-    // ─── Log activity ─────────────────────────────────────
     await logTripActivity({
       userId: req.userId,
       tripId: req.params.id,
@@ -142,7 +140,6 @@ export const deleteMessage = async (req, res) => {
     message.imageUrl = '';
     await message.save();
 
-    // ─── Log activity ─────────────────────────────────────
     await logTripActivity({
       userId: req.userId,
       tripId: req.params.id,

@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { activityService } from '../services/activityService';
 
-// ─── Collapse consecutive "message_sent" activities from the same user ───
 function collapseMessages(list, windowMs = 5 * 60 * 1000) {
   const out = [];
   for (const a of list) {
@@ -39,7 +38,7 @@ export function useNotifications({ filter = 'all', page = 1, perPage = 10 } = {}
     try {
       const data = await activityService.getFiltered({
         limit: 200,
-        excludeSelf: true, // ← FIXED: only other users' activity
+        excludeSelf: true, 
       });
       setActivities(collapseMessages(data));
     } catch (err) {

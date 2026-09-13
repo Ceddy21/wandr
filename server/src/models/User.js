@@ -54,6 +54,14 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  resetCode: {
+  type: String,
+  default: null,
+  },
+  resetCodeExpires: {
+    type: Date,
+    default: null,
+  },
 });
 
 const User = mongoose.model('User', userSchema);

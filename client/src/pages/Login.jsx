@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plane, Eye, EyeOff, Hand, Sun, Moon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import ForgotPasswordModal from '../components/trip/modals/ForgotPasswordModal';
 
 function Login({ theme, toggleTheme }) {
   const [showPassword, setShowPassword] = useState(false);
@@ -9,6 +10,8 @@ function Login({ theme, toggleTheme }) {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const [isForgotOpen, setIsForgotOpen] = useState(false);
 
   const navigate = useNavigate();
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -35,11 +38,11 @@ function Login({ theme, toggleTheme }) {
       }
 
       console.log('Login successful!', data.user);
-      
+
       localStorage.setItem('user', JSON.stringify(data.user));
-      
+
       navigate('/dashboard');
-      
+
     } catch (err) {
       setError(err.message);
     } finally {
@@ -63,7 +66,7 @@ function Login({ theme, toggleTheme }) {
         throw new Error(data.message || 'Failed to get Google auth URL');
       }
       window.location.href = data.url;
-      
+
     } catch (err) {
       setError(err.message);
       setIsLoading(false);
@@ -73,7 +76,7 @@ function Login({ theme, toggleTheme }) {
   return (
     <div className="relative min-h-screen flex items-center justify-center px-4 transition-colors duration-300 overflow-hidden">
 
-      <div 
+      <div
         className="absolute inset-0 pointer-events-none"
         style={{
           backgroundImage: `url(https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&q=80)`,
@@ -85,7 +88,7 @@ function Login({ theme, toggleTheme }) {
         }}
       ></div>
 
-      <div 
+      <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background: theme === 'dark'
@@ -94,7 +97,7 @@ function Login({ theme, toggleTheme }) {
         }}
       ></div>
 
-      <div 
+      <div
         className="absolute top-20 right-10 w-64 h-64 rounded-full blur-3xl pointer-events-none"
         style={{
           background: theme === 'dark'
@@ -104,7 +107,7 @@ function Login({ theme, toggleTheme }) {
         aria-hidden="true"
       ></div>
 
-      <div 
+      <div
         className="absolute bottom-20 left-10 w-48 h-48 rounded-full blur-3xl pointer-events-none"
         style={{
           background: theme === 'dark'
@@ -122,7 +125,7 @@ function Login({ theme, toggleTheme }) {
         {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
       </button>
 
-      <div 
+      <div
         className="w-full max-w-md rounded-2xl p-8 relative overflow-hidden z-10"
         style={{
           background: theme === 'dark'
@@ -139,8 +142,8 @@ function Login({ theme, toggleTheme }) {
         }}
       >
 
-        <div 
-          className="absolute top-0 left-0 right-0 h-1" 
+        <div
+          className="absolute top-0 left-0 right-0 h-1"
           style={{
             background: 'linear-gradient(90deg, #2D6A4F, #c46a4d, #E76F51)',
             boxShadow: '0 1px 8px rgba(196,106,77,0.3)'
@@ -148,7 +151,7 @@ function Login({ theme, toggleTheme }) {
         ></div>
 
         {theme !== 'dark' && (
-          <div 
+          <div
             className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-10 pointer-events-none"
             style={{
               background: 'radial-gradient(circle, white, transparent)'
@@ -222,6 +225,16 @@ function Login({ theme, toggleTheme }) {
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
+
+            <div className="flex justify-end mt-2">
+              <button
+                type="button"
+                onClick={() => setIsForgotOpen(true)}
+                className="text-xs font-medium text-terracotta dark:text-dark-terracotta hover:underline transition-colors"
+              >
+                Forgot password?
+              </button>
+            </div>
           </div>
 
           <button
@@ -273,6 +286,12 @@ function Login({ theme, toggleTheme }) {
           </a>
         </div>
       </div>
+
+      <ForgotPasswordModal
+        isOpen={isForgotOpen}
+        onClose={() => setIsForgotOpen(false)}
+        theme={theme}
+      />
     </div>
   );
 }

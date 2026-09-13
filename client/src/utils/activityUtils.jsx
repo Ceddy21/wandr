@@ -16,37 +16,28 @@ import {
   MessageCircle,
 } from 'lucide-react';
 
-// ═══════════════════════════════════════════════════════════
-// ICON
-// ═══════════════════════════════════════════════════════════
 export const getActivityIcon = (type, className = 'w-4 h-4') => {
   switch (type) {
-    // ─── Expenses ─────────────────────────────────────────
     case 'expense_added':   return <DollarSign className={className} />;
     case 'expense_updated': return <Pencil className={className} />;
     case 'expense_deleted': return <Trash2 className={className} />;
 
-    // ─── Members ──────────────────────────────────────────
     case 'member_added':    return <UserPlus className={className} />;
     case 'member_removed':  return <UserMinus className={className} />;
 
-    // ─── Itinerary ────────────────────────────────────────
     case 'activity_added':   return <MapPin className={className} />;
     case 'activity_updated': return <Pencil className={className} />;
     case 'activity_deleted': return <Trash2 className={className} />;
 
-    // ─── Trips ────────────────────────────────────────────
     case 'trip_created':    return <Plane className={className} />;
     case 'trip_archived':   return <Archive className={className} />;
     case 'trip_unarchived': return <ArchiveRestore className={className} />;
 
-    // ─── Polls ────────────────────────────────────────────
     case 'poll_created':        return <FileText className={className} />;
     case 'poll_deleted':        return <Trash2 className={className} />;
     case 'poll_option_added':   return <PlusCircle className={className} />;
     case 'poll_option_deleted': return <MinusCircle className={className} />;
 
-    // ─── Chat ─────────────────────────────────────────────
     case 'message_sent':    return <MessageCircle className={className} />;
     case 'message_edited':  return <Pencil className={className} />;
     case 'message_deleted': return <Trash2 className={className} />;
@@ -55,11 +46,7 @@ export const getActivityIcon = (type, className = 'w-4 h-4') => {
   }
 };
 
-// ═══════════════════════════════════════════════════════════
-// COLOR
-// ═══════════════════════════════════════════════════════════
 export const getActivityColor = (type) => {
-  // Broad rules first
   if (type.endsWith('_deleted')) {
     return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
   }
@@ -83,16 +70,12 @@ export const getActivityColor = (type) => {
   }
 };
 
-// ═══════════════════════════════════════════════════════════
-// LINK
-// ═══════════════════════════════════════════════════════════
 export const getActivityLink = (activity) => {
   const { tripId, type } = activity;
   if (!tripId) return null;
 
   const base = `/trip/${tripId}`;
 
-  // Deleted items have no target — just land on the trip page
   if (type.endsWith('_deleted')) return base;
 
   switch (type) {
@@ -119,9 +102,6 @@ export const getActivityLink = (activity) => {
   }
 };
 
-// ═══════════════════════════════════════════════════════════
-// TIME
-// ═══════════════════════════════════════════════════════════
 export const formatTime = (date) => {
   const diff = Date.now() - new Date(date).getTime();
   const minutes = Math.floor(diff / 60000);

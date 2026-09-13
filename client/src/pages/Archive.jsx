@@ -21,7 +21,7 @@ function Archive() {
   const { trips, loading, deleteTrip, unarchiveTrip } = useTrips();
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
-  const [isRestoring, setIsRestoring] = useState(null);   // ← track which trip is restoring
+  const [isRestoring, setIsRestoring] = useState(null);   
 
   const archivedTrips = trips.filter((trip) => trip.status === 'archived');
 
@@ -95,7 +95,6 @@ function Archive() {
                 key={trip._id}
                 className="bg-white dark:bg-dark-card border border-[#e8eaed] dark:border-dark-border rounded-xl p-4 sm:p-6 hover:shadow-md transition-all duration-300 flex flex-col opacity-90"
               >
-                {/* Title + Status */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <h3 className="font-serif text-lg font-semibold text-deep-charcoal dark:text-dark-text truncate">

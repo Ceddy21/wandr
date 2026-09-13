@@ -24,7 +24,6 @@ export const TripControls = ({
       />
     </div>
 
-    {/* Filter */}
     <div className="relative">
       <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-grey dark:text-dark-text-secondary" />
       <select
@@ -39,7 +38,6 @@ export const TripControls = ({
       </select>
     </div>
 
-    {/* Sort */}
     <div className="relative">
       <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-grey dark:text-dark-text-secondary" />
       <select
@@ -53,7 +51,6 @@ export const TripControls = ({
       </select>
     </div>
 
-    {/* Grid / List toggle — terracotta active in both modes */}
     <div className="flex items-center gap-1 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card p-1 self-start sm:self-auto">
       <button
         type="button"

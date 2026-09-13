@@ -1,7 +1,4 @@
 import { z } from 'zod';
-
-// ─── Shared password validator ───────────────────────────
-// Matches the frontend progressive checker in Signup.jsx.
 const SPECIAL_CHARS = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?`~]/;
 
 const strongPassword = z

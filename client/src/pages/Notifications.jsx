@@ -40,7 +40,6 @@ const Notifications = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-10 lg:px-20 py-8 sm:py-12">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-serif font-bold text-deep-charcoal dark:text-dark-text flex items-center gap-2">
@@ -69,7 +68,6 @@ const Notifications = () => {
         </div>
       </div>
 
-      {/* Filter */}
       <div className="flex items-center gap-3 mb-6">
         <div className="relative">
           <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-grey dark:text-dark-text-secondary" />
@@ -91,7 +89,6 @@ const Notifications = () => {
         </span>
       </div>
 
-      {/* Body */}
       {loading ? (
         <div className="flex justify-center py-16">
           <Loader className="w-8 h-8 animate-spin text-terracotta dark:text-dark-terracotta" />
@@ -174,7 +171,6 @@ const Notifications = () => {
         </div>
       )}
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-6">
           <button

@@ -21,18 +21,21 @@ const gmail = google.gmail({ version: 'v1', auth: oAuth2Client });
 const BRAND = {
   green: '#2D6A4F',
   terracotta: '#E76F51',
-  red: '#dc2626',
+  red: '#DC2626',
   charcoal: '#1A1A1A',
   grey: '#6B7280',
   lightGrey: '#F3F4F6',
   border: '#E5E7EB',
-  bg: '#F9FAFB',
+  bg: '#F7F8F6',
+  white: '#FFFFFF',
 };
+
+const LOGO_URL =
+  'https://res.cloudinary.com/sqlrnnth/image/upload/v1789228245/wandr_nologo.png';
 
 const buildEmailHtml = ({
   preheader = '',
   accent = BRAND.terracotta,
-  icon = '✈️',
   heading,
   intro,
   code,
@@ -44,146 +47,136 @@ const buildEmailHtml = ({
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="x-apple-disable-message-reformatting" />
+  <meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no" />
   <title>${heading}</title>
 </head>
-<body style="margin:0; padding:0; background-color:${BRAND.bg}; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing:antialiased;">
+<body style="margin:0; padding:0; background-color:${BRAND.bg}; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing:antialiased;">
 
-  <!-- Preheader (hidden preview text) -->
-  <div style="display:none; max-height:0; overflow:hidden; mso-hide:all;">
+  <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent; mso-hide:all;">
     ${preheader}
   </div>
 
-  <!-- Outer wrapper -->
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${BRAND.bg}; padding: 40px 16px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%; background-color:${BRAND.bg};">
     <tr>
-      <td align="center">
+      <td align="center" style="padding:48px 16px;">
 
-        <!-- Card -->
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 520px; background-color:#ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.06); border: 1px solid ${BRAND.border};">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px; width:100%;">
 
-          <!-- Accent bar -->
           <tr>
-            <td style="height: 4px; background: linear-gradient(90deg, ${BRAND.green} 0%, ${accent} 100%);"></td>
-          </tr>
-
-          <!-- Brand header -->
-          <tr>
-            <td align="center" style="padding: 32px 32px 8px;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td style="vertical-align: middle; padding-right: 10px;">
-                    <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, ${BRAND.green} 0%, ${BRAND.terracotta} 100%); display: inline-block; text-align: center; line-height: 36px; font-size: 18px;">
-                      ${icon}
-                    </div>
-                  </td>
-                  <td style="vertical-align: middle;">
-                    <span style="font-family: Georgia, 'Times New Roman', serif; font-size: 24px; font-weight: 700; color: ${BRAND.charcoal}; letter-spacing: -0.5px;">
-                      Wandr
-                    </span>
-                  </td>
-                </tr>
-              </table>
+            <td align="center" style="padding:0 0 24px;">
+              <img
+                src="${LOGO_URL}"
+                alt="Wandr"
+                width="150"
+                style="display:block; width:150px; max-width:150px; height:auto; border:0; outline:none; text-decoration:none;"
+              />
             </td>
           </tr>
 
-          <!-- Heading -->
           <tr>
-            <td align="center" style="padding: 24px 32px 8px;">
-              <h1 style="margin: 0; font-family: Georgia, 'Times New Roman', serif; font-size: 26px; line-height: 1.3; font-weight: 700; color: ${BRAND.charcoal};">
-                ${heading}
-              </h1>
-            </td>
-          </tr>
+            <td style="background-color:${BRAND.white}; border:1px solid ${BRAND.border}; border-radius:18px; overflow:hidden;">
 
-          <!-- Intro text -->
-          <tr>
-            <td align="center" style="padding: 8px 32px 24px;">
-              <p style="margin: 0; font-size: 15px; line-height: 1.6; color: ${BRAND.grey};">
-                ${intro}
-              </p>
-            </td>
-          </tr>
-
-          <!-- Code box -->
-          <tr>
-            <td align="center" style="padding: 0 32px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td align="center" style="background-color: ${BRAND.lightGrey}; border: 2px dashed ${BRAND.border}; border-radius: 12px; padding: 24px 16px;">
-                    <div style="font-family: 'Courier New', Courier, monospace; font-size: 40px; font-weight: 700; letter-spacing: 12px; color: ${BRAND.charcoal}; line-height: 1;">
-                      ${code}
-                    </div>
+                  <td style="height:4px; background-color:${accent}; font-size:0; line-height:0;">
+                    &nbsp;
                   </td>
                 </tr>
               </table>
-            </td>
-          </tr>
 
-          <!-- Footer message -->
-          <tr>
-            <td align="center" style="padding: 24px 32px 16px;">
-              <p style="margin: 0; font-size: 13px; line-height: 1.6; color: ${BRAND.grey};">
-                ${footer}
-              </p>
-            </td>
-          </tr>
-
-          ${
-            warning
-              ? `
-          <!-- Warning callout -->
-          <tr>
-            <td style="padding: 0 32px 24px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #FEF2F2; border-left: 3px solid ${BRAND.red}; border-radius: 6px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="padding: 14px 16px;">
-                    <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #991B1B; font-weight: 500;">
-                      ${warning}
+                  <td align="center" style="padding:40px 40px 12px;">
+                    <h1 style="margin:0; font-family:Georgia, 'Times New Roman', serif; font-size:28px; line-height:36px; font-weight:700; color:${BRAND.charcoal};">
+                      ${heading}
+                    </h1>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td align="center" style="padding:0 40px 32px;">
+                    <p style="margin:0; font-size:15px; line-height:24px; color:${BRAND.grey};">
+                      ${intro}
+                    </p>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:0 40px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${BRAND.lightGrey}; border:1px dashed #D1D5DB; border-radius:14px;">
+                      <tr>
+                        <td align="center" style="padding:28px 20px;">
+                          <p style="margin:0 0 10px; font-size:11px; line-height:16px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:${BRAND.grey};">
+                            Verification code
+                          </p>
+                          <div style="font-family:'Courier New', Courier, monospace; font-size:38px; line-height:46px; font-weight:700; letter-spacing:10px; color:${BRAND.charcoal};">
+                            ${code}
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td align="center" style="padding:28px 40px 24px;">
+                    <p style="margin:0; font-size:13px; line-height:21px; color:${BRAND.grey};">
+                      ${footer}
+                    </p>
+                  </td>
+                </tr>
+
+                ${
+                  warning
+                    ? `
+                <tr>
+                  <td style="padding:0 40px 28px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FEF2F2; border:1px solid #FECACA; border-radius:10px;">
+                      <tr>
+                        <td style="padding:14px 16px;">
+                          <p style="margin:0; font-size:13px; line-height:20px; color:#991B1B;">
+                            ${warning}
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                `
+                    : ''
+                }
+
+                <tr>
+                  <td style="padding:0 40px;">
+                    <div style="height:1px; background-color:${BRAND.border}; font-size:0; line-height:0;">
+                      &nbsp;
+                    </div>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td align="center" style="padding:24px 40px 32px;">
+                    <p style="margin:0; font-size:13px; line-height:20px; color:${BRAND.grey};">
+                      Plan your adventures with friends.
                     </p>
                   </td>
                 </tr>
               </table>
-            </td>
-          </tr>
-          `
-              : ''
-          }
 
-          <!-- Divider -->
-          <tr>
-            <td style="padding: 0 32px;">
-              <div style="height: 1px; background-color: ${BRAND.border};"></div>
             </td>
           </tr>
 
-          <!-- App tagline -->
           <tr>
-            <td align="center" style="padding: 24px 32px 12px;">
-              <p style="margin: 0; font-size: 13px; color: ${BRAND.grey};">
-                Plan your adventures with friends.
-              </p>
-            </td>
-          </tr>
-
-          <!-- Bottom spacing -->
-          <tr>
-            <td style="padding: 0 0 32px;"></td>
-          </tr>
-
-        </table>
-
-        <!-- Footer below card -->
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 520px; margin-top: 16px;">
-          <tr>
-            <td align="center" style="padding: 8px 16px;">
-              <p style="margin: 0; font-size: 11px; line-height: 1.6; color: #9CA3AF;">
+            <td align="center" style="padding:20px 20px 0;">
+              <p style="margin:0; font-size:11px; line-height:18px; color:#9CA3AF;">
                 This is an automated message. Please don't reply to this email.
               </p>
-              <p style="margin: 6px 0 0; font-size: 11px; color: #9CA3AF;">
+              <p style="margin:5px 0 0; font-size:11px; line-height:18px; color:#9CA3AF;">
                 © ${new Date().getFullYear()} Wandr · All rights reserved
               </p>
             </td>
           </tr>
+
         </table>
 
       </td>
@@ -205,6 +198,7 @@ const sendEmail = async (toEmail, subject, html) => {
   ];
 
   const email = emailLines.join('\r\n');
+
   const base64Email = Buffer.from(email)
     .toString('base64')
     .replace(/\+/g, '-')
@@ -213,11 +207,17 @@ const sendEmail = async (toEmail, subject, html) => {
 
   const response = await gmail.users.messages.send({
     userId: 'me',
-    requestBody: { raw: base64Email },
+    requestBody: {
+      raw: base64Email,
+    },
   });
 
   console.log('Email sent!', response.data.id);
-  return { success: true, messageId: response.data.id };
+
+  return {
+    success: true,
+    messageId: response.data.id,
+  };
 };
 
 export const sendVerificationEmail = async (toEmail, code) => {
@@ -228,13 +228,12 @@ export const sendVerificationEmail = async (toEmail, code) => {
       buildEmailHtml({
         preheader: `Your Wandr verification code is ${code}`,
         accent: BRAND.terracotta,
-        icon: '✈️',
         heading: 'Welcome to Wandr',
         intro:
-          'Thanks for signing up! Enter the code below to verify your email and start planning your trips.',
+          'Thanks for signing up. Enter the verification code below to confirm your email address and start planning your trips.',
         code,
         footer:
-          'This code expires in <strong>10 minutes</strong>.<br />If you didn\'t create an account, you can safely ignore this email.',
+          'This code expires in <strong>10 minutes</strong>.<br />If you didn\'t create a Wandr account, you can safely ignore this email.',
       })
     );
   } catch (error) {
@@ -249,12 +248,11 @@ export const sendAccountDeletionEmail = async (toEmail, code) => {
       toEmail,
       'Confirm your Wandr account deletion',
       buildEmailHtml({
-        preheader: `Confirm account deletion with code ${code}`,
+        preheader: `Confirm your Wandr account deletion with code ${code}`,
         accent: BRAND.red,
-        icon: '⚠️',
         heading: 'Delete your account?',
         intro:
-          'Enter the code below to confirm deletion of your Wandr account and all associated data. This action is permanent.',
+          'Enter the code below to confirm the deletion of your Wandr account and associated data. This action cannot be undone.',
         code,
         footer: 'This code expires in <strong>10 minutes</strong>.',
         warning:
@@ -264,5 +262,26 @@ export const sendAccountDeletionEmail = async (toEmail, code) => {
   } catch (error) {
     console.error('Deletion email error:', error.message);
     throw new Error('Failed to send deletion confirmation email.');
+  }
+};
+export const sendPasswordResetEmail = async (toEmail, code) => {
+  try {
+    return await sendEmail(
+      toEmail,
+      'Reset your Wandr password',
+      buildEmailHtml({
+        preheader: `Your Wandr password reset code is ${code}`,
+        accent: BRAND.terracotta,
+        heading: 'Reset your password',
+        intro:
+          'We received a request to reset your Wandr password. Enter the code below to choose a new one.',
+        code,
+        footer:
+          'This code expires in <strong>10 minutes</strong>.<br />If you didn\'t request a reset, you can safely ignore this email — your password won\'t change.',
+      })
+    );
+  } catch (error) {
+    console.error('Password reset email error:', error.message);
+    throw new Error('Failed to send password reset email.');
   }
 };

@@ -14,31 +14,19 @@ import {
 import { useNavigate } from 'react-router-dom';
 import NotificationBell from './NotificationBell';
 
-// ═══════════════════════════════════════════════════════════
-// LOGO CONFIG — tweak these to resize the logo
-// ═══════════════════════════════════════════════════════════
+const LOGO_URL = 'https://res.cloudinary.com/sqlrnnth/image/upload/w_320,h_320,c_fit,q_auto,f_auto/v1789228245/wandr_nologo.png';
 
-// Cloudinary URL (optimized)
-const LOGO_URL =
-  'https://res.cloudinary.com/sqlrnnth/image/upload/w_320,h_320,c_fit,q_auto,f_auto/v1789228245/wandr_nologo.png';
-
-// Logo height in pixels for each breakpoint
 const LOGO_SIZE = {
-  mobile: 64,   // < 640px
-  tablet: 72,   // 640–767px
-  desktop: 80,  // ≥ 768px
+  mobile: 64,  
+  tablet: 72,   
+  desktop: 80,  
 };
 
-// Text size — scales proportionally with the logo
 const TEXT_SIZE = {
-  mobile: 'text-2xl',   // 24px
-  tablet: 'text-3xl',   // 30px
-  desktop: 'text-3xl',  // 30px
+  mobile: 'text-2xl',  
+  tablet: 'text-3xl',   
+  desktop: 'text-3xl',  
 };
-
-// ═══════════════════════════════════════════════════════════
-// COMPONENT
-// ═══════════════════════════════════════════════════════════
 
 function Header({ theme, toggleTheme }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -147,19 +135,17 @@ function Header({ theme, toggleTheme }) {
   return (
     <nav className="bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border-b border-[#e8eaed] dark:border-dark-border px-4 sm:px-6 md:px-10 lg:px-20 py-3 sm:py-4 sticky top-0 z-50 transition-colors duration-300">
       <div className="flex items-center justify-between max-w-7xl mx-auto">
-        {/* ─── Logo + Wordmark ─────────────────────────── */}
         <a
           href="/dashboard"
           className="flex items-center gap-3 group hover:opacity-90 transition-opacity duration-200"
         >
-          {/* Logo image — sized via inline style for precise control */}
           <img
             src={LOGO_URL}
             alt="Wandr logo"
             width={LOGO_SIZE.desktop}
             height={LOGO_SIZE.desktop}
             style={{
-              height: 'clamp(48px, 5vw, 64px)',  // responsive, bounded
+              height: 'clamp(48px, 5vw, 64px)', 
               width: 'auto',
             }}
             className="object-contain"
@@ -171,7 +157,6 @@ function Header({ theme, toggleTheme }) {
           </span>
         </a>
 
-        {/* ─── Desktop nav ────────────────────────────── */}
         <div className="hidden md:flex items-center gap-1">
           <a
             href="/dashboard"
@@ -203,7 +188,6 @@ function Header({ theme, toggleTheme }) {
           </a>
         </div>
 
-        {/* ─── Right cluster ──────────────────────────── */}
         <div className="flex items-center gap-1">
           <NotificationBell />
 
@@ -256,7 +240,6 @@ function Header({ theme, toggleTheme }) {
           </button>
         </div>
 
-        {/* ─── Mobile controls ────────────────────────── */}
         <div className="flex md:hidden items-center gap-2">
           <button
             onClick={toggleTheme}
@@ -275,7 +258,6 @@ function Header({ theme, toggleTheme }) {
         </div>
       </div>
 
-      {/* ─── Mobile menu ──────────────────────────────── */}
       {isMobileMenuOpen && (
         <div className="md:hidden mt-3 pt-3 border-t border-[#e8eaed] dark:border-dark-border animate-in slide-in-from-top-2 duration-200">
           <a
