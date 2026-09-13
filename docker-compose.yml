@@ -1,0 +1,55 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: wandr-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - wandr-net
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: wandr-server
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./server/.env
+    environment:
+      CLIENT_URL: http://127.0.0.1
+      NODE_ENV: development
+      PORT: 5000
+    depends_on:
+      - mongo
+    networks:
+      - wandr-net
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://127.0.0.1:5000
+        VITE_CLOUDINARY_CLOUD_NAME: sqlrnnth
+        VITE_CLOUDINARY_UPLOAD_PRESET: wandr_uploads
+        VITE_CLOUDINARY_PROFILE_PRESET: wandr_profile
+    container_name: wandr-client
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - server
+    networks:
+      - wandr-net
+
+volumes:
+  mongo-data:
+
+networks:
+  wandr-net:
+    driver: bridge

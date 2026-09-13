@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
 import { generateVerificationCode } from '../utils/generateCode.js';
 import {
@@ -8,7 +9,13 @@ import {
   sendAccountDeletionEmail,
   sendPasswordResetEmail,
 } from '../utils/sendEmail.js';
-import { registerSchema, loginSchema, verifySchema } from '../utils/validator.js';
+import {
+  registerSchema,
+  loginSchema,
+  verifySchema,
+  changePasswordSchema,
+  resetPasswordSchema,
+} from '../utils/validator.js';
 import dotenv from "dotenv";
 
 import Trip from '../models/Trip.js';
@@ -20,11 +27,21 @@ import Activity from '../models/Activity.js';
 
 dotenv.config({ path: './.env' });
 
-const googleClient = new OAuth2Client(
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+
+const createGoogleClient = () => new OAuth2Client(
   process.env.GMAIL_CLIENT_ID,
   process.env.GMAIL_CLIENT_SECRET,
   `${process.env.CLIENT_URL || 'http://localhost:5173'}/google-callback`
 );
+
+const hashCode = (code) => crypto.createHash('sha256').update(code).digest('hex');
+
+// ═══════════════════════════════════════════════════════════
+// REGISTER / VERIFY
+// ═══════════════════════════════════════════════════════════
 
 export const register = async (req, res) => {
   try {
@@ -47,7 +64,7 @@ export const register = async (req, res) => {
       email,
       name: displayName,
       passwordHash,
-      verificationCode: code,
+      verificationCode: hashCode(code),
       verificationCodeExpires: codeExpires,
       isVerified: false,
     });
@@ -60,7 +77,8 @@ export const register = async (req, res) => {
     });
   } catch (error) {
     if (error.name === 'ZodError') {
-      return res.status(400).json({ message: error.errors[0].message });
+      return res.status(400).json({ message: error.issues?.[0]?.message || error.errors?.[0]?.message || 'Validation error' });
+
     }
     console.error('Register error:', error);
     res.status(500).json({ message: 'Server error during registration.' });
@@ -76,7 +94,7 @@ export const verify = async (req, res) => {
       return res.status(404).json({ message: 'No account found with that email.' });
     }
 
-    if (user.verificationCode !== code) {
+    if (user.verificationCode !== hashCode(code)) {
       return res.status(400).json({ message: 'Invalid verification code.' });
     }
 
@@ -97,12 +115,17 @@ export const verify = async (req, res) => {
     res.json({ message: 'Email verified successfully! You can now log in.' });
   } catch (error) {
     if (error.name === 'ZodError') {
-      return res.status(400).json({ message: error.errors[0].message });
+      return res.status(400).json({ message: error.issues?.[0]?.message || error.errors?.[0]?.message || 'Validation error' });
+
     }
     console.error('Verify error:', error);
     res.status(500).json({ message: 'Server error during verification.' });
   }
 };
+
+// ═══════════════════════════════════════════════════════════
+// LOGIN / LOGOUT / ME
+// ═══════════════════════════════════════════════════════════
 
 export const login = async (req, res) => {
   try {
@@ -113,22 +136,64 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials.' });
     }
 
+    // ═══ Account lockout check ═══════════════════════════
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const minutesLeft = Math.ceil(
+        (user.lockedUntil.getTime() - Date.now()) / 60000
+      );
+      return res.status(423).json({
+        message: `Account locked due to too many failed attempts. Try again in ${minutesLeft} minute${minutesLeft === 1 ? '' : 's'}.`,
+      });
+    }
+
     if (!user.isVerified) {
       return res.status(401).json({ message: 'Please verify your email first.' });
     }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
+
+    // ═══ Wrong password — increment counter ══════════════
     if (!isMatch) {
+      user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+
+      if (user.failedLoginAttempts >= 10) {
+        user.lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+        user.failedLoginAttempts = 0;
+        await user.save();
+
+        return res.status(423).json({
+          message: 'Too many failed attempts. Account locked for 15 minutes.',
+        });
+      }
+
+      await user.save();
       return res.status(401).json({ message: 'Invalid credentials.' });
     }
 
+    // ═══ Success — reset counters ════════════════════════
+    let needsSave = false;
+
+    if (user.failedLoginAttempts > 0) {
+      user.failedLoginAttempts = 0;
+      needsSave = true;
+    }
+    if (user.lockedUntil) {
+      user.lockedUntil = null;
+      needsSave = true;
+    }
     if (!user.name || !user.name.trim()) {
       user.name = user.email.split('@')[0];
-      await user.save();
+      needsSave = true;
     }
 
+    if (needsSave) await user.save();
+
     const token = jwt.sign(
-      { userId: user._id, email: user.email },
+      {
+        userId: user._id,
+        email: user.email,
+        tokenVersion: user.tokenVersion || 0,
+      },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -152,7 +217,8 @@ export const login = async (req, res) => {
     });
   } catch (error) {
     if (error.name === 'ZodError') {
-      return res.status(400).json({ message: error.errors[0].message });
+      return res.status(400).json({ message: error.issues?.[0]?.message || error.errors?.[0]?.message || 'Validation error' });
+
     }
     console.error('Login error:', error);
     res.status(500).json({ message: 'Server error during login.' });
@@ -175,6 +241,10 @@ export const getMe = async (req, res) => {
     res.status(500).json({ message: 'Server error.' });
   }
 };
+
+// ═══════════════════════════════════════════════════════════
+// PROFILE
+// ═══════════════════════════════════════════════════════════
 
 export const updateProfile = async (req, res) => {
   try {
@@ -217,6 +287,10 @@ export const updateProfile = async (req, res) => {
   }
 };
 
+// ═══════════════════════════════════════════════════════════
+// FORGOT PASSWORD
+// ═══════════════════════════════════════════════════════════
+
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -227,37 +301,38 @@ export const forgotPassword = async (req, res) => {
 
     const user = await User.findOne({ email: email.toLowerCase().trim() });
 
+    // ═══ Uniform response — don't leak whether email exists ═══
+    const GENERIC_RESPONSE = {
+      message: 'If an account with that email exists, a password reset code has been sent.',
+    };
+
     if (!user) {
-      return res.status(404).json({
-        message: 'No Wandr account found with that email.',
-      });
+      return res.status(200).json(GENERIC_RESPONSE);
     }
 
+    // Google users — still send generic response
     if (user.isGoogleUser) {
-      return res.status(400).json({
-        message: 'This account uses Google sign-in. Reset your password through Google.',
-      });
+      return res.status(200).json(GENERIC_RESPONSE);
     }
 
+    // Rate limit — but don't leak via status code
     if (
       user.resetCodeExpires &&
       user.resetCodeExpires > new Date(Date.now() + 9 * 60 * 1000)
     ) {
-      return res.status(429).json({
-        message: 'Please wait before requesting another code.',
-      });
+      return res.status(200).json(GENERIC_RESPONSE);
     }
 
     const code = generateVerificationCode();
     const codeExpires = new Date(Date.now() + 10 * 60 * 1000);
 
-    user.resetCode = code;
+    user.resetCode = hashCode(code);
     user.resetCodeExpires = codeExpires;
     await user.save();
 
     await sendPasswordResetEmail(user.email, code);
 
-    res.json({ message: 'Reset code sent to your email.' });
+    res.status(200).json(GENERIC_RESPONSE);
   } catch (error) {
     console.error('Forgot password error:', error);
     res.status(500).json({ message: 'Server error.' });
@@ -277,7 +352,7 @@ export const verifyResetCode = async (req, res) => {
       return res.status(400).json({ message: 'Invalid code.' });
     }
 
-    if (!user.resetCode || user.resetCode !== code) {
+    if (!user.resetCode || user.resetCode !== hashCode(code)) {
       return res.status(400).json({ message: 'Invalid code.' });
     }
 
@@ -294,26 +369,14 @@ export const verifyResetCode = async (req, res) => {
 
 export const resetPassword = async (req, res) => {
   try {
-    const { email, code, newPassword } = req.body;
-
-    if (!email || !code || !newPassword) {
-      return res.status(400).json({
-        message: 'Email, code, and new password are required.',
-      });
-    }
-
-    if (newPassword.length < 8) {
-      return res.status(400).json({
-        message: 'Password must be at least 8 characters.',
-      });
-    }
+    const { email, code, newPassword } = resetPasswordSchema.parse(req.body);
 
     const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
       return res.status(400).json({ message: 'Invalid request.' });
     }
 
-    if (!user.resetCode || user.resetCode !== code) {
+    if (!user.resetCode || user.resetCode !== hashCode(code)) {
       return res.status(400).json({ message: 'Invalid code.' });
     }
 
@@ -325,14 +388,29 @@ export const resetPassword = async (req, res) => {
     user.passwordHash = await bcrypt.hash(newPassword, salt);
     user.resetCode = null;
     user.resetCodeExpires = null;
+
+    user.failedLoginAttempts = 0;
+    user.lockedUntil = null;
+
+    // Invalidate all existing sessions
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
+
     await user.save();
 
     res.json({ message: 'Password reset successful. You can now log in.' });
   } catch (error) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({ message: error.issues?.[0]?.message || error.errors?.[0]?.message || 'Validation error' });
+
+    }
     console.error('Reset password error:', error);
     res.status(500).json({ message: 'Server error.' });
   }
 };
+
+// ═══════════════════════════════════════════════════════════
+// ACCOUNT DELETION
+// ═══════════════════════════════════════════════════════════
 
 export const requestAccountDeletion = async (req, res) => {
   try {
@@ -362,7 +440,7 @@ export const requestAccountDeletion = async (req, res) => {
     const code = generateVerificationCode();
     const codeExpires = new Date(Date.now() + 10 * 60 * 1000);
 
-    user.deleteAccountCode = code;
+    user.deleteAccountCode = hashCode(code);
     user.deleteAccountCodeExpires = codeExpires;
     await user.save();
 
@@ -386,7 +464,7 @@ export const deleteAccount = async (req, res) => {
     const user = await User.findById(req.userId);
     if (!user) return res.status(404).json({ message: 'User not found.' });
 
-    if (!user.deleteAccountCode || user.deleteAccountCode !== code) {
+    if (!user.deleteAccountCode || user.deleteAccountCode !== hashCode(code)) {
       return res.status(400).json({ message: 'Invalid verification code.' });
     }
 
@@ -433,29 +511,43 @@ export const deleteAccount = async (req, res) => {
   }
 };
 
+// ═══════════════════════════════════════════════════════════
+// RESEND VERIFICATION / CHANGE PASSWORD
+// ═══════════════════════════════════════════════════════════
+
 export const resendVerification = async (req, res) => {
   try {
     const { email } = req.body;
 
-    const user = await User.findOne({ email });
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required.' });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+
+    // ═══ Uniform response ═══
+    const GENERIC_RESPONSE = {
+      message: 'If an account with that email exists and is unverified, a new code has been sent.',
+    };
+
     if (!user) {
-      return res.status(404).json({ message: 'No account found with that email.' });
+      return res.status(200).json(GENERIC_RESPONSE);
     }
 
     if (user.isVerified) {
-      return res.status(400).json({ message: 'This email is already verified.' });
+      return res.status(200).json(GENERIC_RESPONSE);
     }
 
     const code = generateVerificationCode();
     const codeExpires = new Date(Date.now() + 10 * 60 * 1000);
 
-    user.verificationCode = code;
+    user.verificationCode = hashCode(code);
     user.verificationCodeExpires = codeExpires;
     await user.save();
 
-    await sendVerificationEmail(email, code);
+    await sendVerificationEmail(user.email, code);
 
-    res.json({ message: 'New verification code sent to your email.' });
+    res.status(200).json(GENERIC_RESPONSE);
   } catch (error) {
     console.error('Resend error:', error);
     res.status(500).json({ message: 'Server error.' });
@@ -464,7 +556,7 @@ export const resendVerification = async (req, res) => {
 
 export const changePassword = async (req, res) => {
   try {
-    const { currentPassword, newPassword } = req.body;
+    const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
     const userId = req.userId;
 
     const user = await User.findById(userId);
@@ -484,17 +576,49 @@ export const changePassword = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(newPassword, salt);
     user.passwordHash = passwordHash;
+
+    // Invalidate all existing sessions
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
+
     await user.save();
+
+    // ═══ Issue a fresh JWT so this session stays valid ═══
+    const newToken = jwt.sign(
+      {
+        userId: user._id,
+        email: user.email,
+        tokenVersion: user.tokenVersion,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.cookie('wanderly_token', newToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     res.json({ message: 'Password updated successfully.' });
   } catch (error) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({ message: error.issues?.[0]?.message || error.errors?.[0]?.message || 'Validation error' });
+
+    }
     console.error('Change password error:', error);
     res.status(500).json({ message: 'Server error.' });
   }
 };
 
+// ═══════════════════════════════════════════════════════════
+// GOOGLE OAUTH
+// ═══════════════════════════════════════════════════════════
+
 export const googleLogin = async (req, res) => {
   try {
+    const googleClient = createGoogleClient();
+
     const { code } = req.body;
 
     if (!code) {
@@ -549,7 +673,11 @@ export const googleLogin = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { userId: user._id, email: user.email },
+      {
+        userId: user._id,
+        email: user.email,
+        tokenVersion: user.tokenVersion || 0,
+      },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -574,12 +702,24 @@ export const googleLogin = async (req, res) => {
     });
   } catch (error) {
     console.error('Google login error:', error.message);
+
+    if (
+      error.message?.includes('invalid_grant') ||
+      error.message?.toLowerCase().includes('invalid code')
+    ) {
+      return res.status(400).json({
+        message: 'Sign-in link expired or already used. Please try again.',
+      });
+    }
+
     res.status(500).json({ message: 'Google login failed. Please try again.' });
   }
 };
 
 export const getGoogleAuthUrl = async (req, res) => {
   try {
+    const googleClient = createGoogleClient();
+
     const url = googleClient.generateAuthUrl({
       access_type: 'offline',
       scope: ['email', 'profile'],
@@ -597,6 +737,8 @@ export const getGoogleAuthUrl = async (req, res) => {
 
 export const googleCallback = async (req, res) => {
   try {
+    const googleClient = createGoogleClient();
+
     const { code } = req.query;
 
     if (!code) {
@@ -639,7 +781,11 @@ export const googleCallback = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { userId: user._id, email: user.email },
+      {
+        userId: user._id,
+        email: user.email,
+        tokenVersion: user.tokenVersion || 0,
+      },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );

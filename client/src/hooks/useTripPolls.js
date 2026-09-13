@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { tripService } from '../services/tripService';
+import { getSocket, joinTripRoom, leaveTripRoom } from '../services/socketService';
 
 export const useTripPolls = (tripId) => {
   const [polls, setPolls] = useState([]);
@@ -10,22 +11,46 @@ export const useTripPolls = (tripId) => {
     options: ['', ''],
   });
 
-  useEffect(() => {
-    const fetchPolls = async () => {
-      if (!tripId) return;
-      setLoading(true);
-      try {
-        const data = await tripService.getPolls(tripId);
-        setPolls(data);
-      } catch (err) {
-        console.error('Fetch polls error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPolls();
+  // ─── Fetch function (reusable for refetch) ───────────────
+  const fetchPolls = useCallback(async (silent = false) => {
+    if (!tripId) return;
+    if (!silent) setLoading(true);
+    try {
+      const data = await tripService.getPolls(tripId);
+      setPolls(data);
+    } catch (err) {
+      console.error('Fetch polls error:', err);
+    } finally {
+      if (!silent) setLoading(false);
+    }
   }, [tripId]);
 
+  // ─── Initial fetch ───────────────────────────────────────
+  useEffect(() => {
+    fetchPolls();
+  }, [fetchPolls]);
+
+  // ─── Subscribe to socket events ──────────────────────────
+  useEffect(() => {
+    if (!tripId) return;
+
+    const socket = getSocket();
+    joinTripRoom(tripId);
+
+    // Refetch on any poll change (create, delete, add choice, delete choice, vote)
+    const handlePollsChanged = () => {
+      fetchPolls(true); // silent = true (don't show loading spinner)
+    };
+
+    socket.on('polls-changed', handlePollsChanged);
+
+    return () => {
+      socket.off('polls-changed', handlePollsChanged);
+      leaveTripRoom(tripId);
+    };
+  }, [tripId, fetchPolls]);
+
+  // ─── Actions ─────────────────────────────────────────────
   const createPoll = async () => {
     if (!newPoll.question || newPoll.options.some((o) => !o.trim())) {
       toast.error('Please fill in all fields');
@@ -40,7 +65,10 @@ export const useTripPolls = (tripId) => {
         options: validOptions,
       });
 
-      setPolls((prev) => [created, ...prev]);
+      setPolls((prev) => {
+        if (prev.some((p) => p._id === created._id)) return prev;
+        return [created, ...prev];
+      });
       setNewPoll({ question: '', options: ['', ''] });
       toast.success('Poll created!');
       return { success: true };

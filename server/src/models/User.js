@@ -55,12 +55,24 @@ const userSchema = new mongoose.Schema({
     default: null,
   },
   resetCode: {
-  type: String,
-  default: null,
+    type: String,
+    default: null,
   },
   resetCodeExpires: {
     type: Date,
     default: null,
+  },
+  failedLoginAttempts: {
+    type: Number,
+    default: 0,
+  },
+  lockedUntil: {
+    type: Date,
+    default: null,
+  },
+  tokenVersion: {
+    type: Number,
+    default: 0,
   },
 });
 

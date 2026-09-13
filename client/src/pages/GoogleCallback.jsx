@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 function GoogleCallback({ theme, toggleTheme }) {
   const navigate = useNavigate();
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -22,13 +22,19 @@ function GoogleCallback({ theme, toggleTheme }) {
       return;
     }
 
+    // ═══ SESSION GUARD — per browser, per code ═══
+    const guardKey = `oauth_processed_${code}`;
+    if (sessionStorage.getItem(guardKey)) {
+      console.log('[GoogleCallback] Code already processed, skipping');
+      return;
+    }
+    sessionStorage.setItem(guardKey, '1');
+
     const handleGoogleLogin = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/api/auth/google/login`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ code }),
           credentials: 'include',
         });
@@ -39,10 +45,15 @@ function GoogleCallback({ theme, toggleTheme }) {
           throw new Error(data.message || 'Google login failed');
         }
 
+        // Clean up the guard — the code is consumed
+        sessionStorage.removeItem(guardKey);
+
         localStorage.setItem('user', JSON.stringify(data.user));
         navigate('/dashboard');
       } catch (err) {
         console.error('Google login error:', err.message);
+        // Clear the guard so the user can retry
+        sessionStorage.removeItem(guardKey);
         navigate('/login?error=google_login_failed');
       }
     };

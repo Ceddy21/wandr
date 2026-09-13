@@ -9,6 +9,11 @@ const verifyTripAccess = async (tripId, userId) => {
   });
 };
 
+const emitTripEvent = (req, tripId, eventName, payload) => {
+  const io = req.app.get('io');
+  if (io) io.to(`trip:${tripId}`).emit(eventName, payload);
+};
+
 export const getItinerary = async (req, res) => {
   try {
     const trip = await verifyTripAccess(req.params.id, req.userId);
@@ -55,7 +60,7 @@ export const addItinerary = async (req, res) => {
       targetId: item._id,
       tripName: trip.name,
     });
-
+    emitTripEvent(req, req.params.id, 'itinerary-added', { item });
     res.status(201).json(item);
   } catch (error) {
     console.error('Add itinerary error:', error);
@@ -96,7 +101,7 @@ export const updateItinerary = async (req, res) => {
         tripName: trip.name,
       });
     }
-
+    emitTripEvent(req, req.params.id, 'itinerary-updated', { item });
     res.json(item);
   } catch (error) {
     console.error('Update itinerary error:', error);
@@ -125,7 +130,7 @@ export const deleteItinerary = async (req, res) => {
       targetId: item._id,
       tripName: trip.name,
     });
-
+    emitTripEvent(req, req.params.id, 'itinerary-deleted', { itemId: itineraryId });
     res.json({ message: 'Itinerary item deleted successfully' });
   } catch (error) {
     console.error('Delete itinerary error:', error);

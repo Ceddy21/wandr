@@ -9,6 +9,11 @@ const verifyTripAccess = async (tripId, userId) => {
   });
 };
 
+const emitTripEvent = (req, tripId, eventName, payload) => {
+  const io = req.app.get('io');
+  if (io) io.to(`trip:${tripId}`).emit(eventName, payload);
+};
+
 export const getExpenses = async (req, res) => {
   try {
     const trip = await verifyTripAccess(req.params.id, req.userId);
@@ -57,7 +62,7 @@ export const addExpense = async (req, res) => {
       amount: expense.amount,
       tripName: trip.name,
     });
-
+    emitTripEvent(req, req.params.id, 'expense-added', { expense });
     res.status(201).json(expense);
   } catch (error) {
     console.error('Add expense error:', error);
@@ -97,7 +102,7 @@ export const updateExpense = async (req, res) => {
       amount: expense.amount,
       tripName: trip.name,
     });
-
+    emitTripEvent(req, req.params.id, 'expense-updated', { expense });
     res.json(expense);
   } catch (error) {
     console.error('Update expense error:', error);
@@ -127,7 +132,7 @@ export const deleteExpense = async (req, res) => {
       amount: expense.amount,
       tripName: trip.name,
     });
-
+    emitTripEvent(req, req.params.id, 'expense-deleted', { expenseId });
     res.json({ message: 'Expense deleted successfully' });
   } catch (error) {
     console.error('Delete expense error:', error);

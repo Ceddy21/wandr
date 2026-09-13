@@ -28,7 +28,7 @@
     "nodemailer": "^10.0.1",
     "npm": "^12.0.2",
     "socket.io": "^4.8.3",
-    "xss-clean": "^0.1.4",
+    "xss": "^1.0.15",
     "zod": "^4.5.4"
   },
   "devDependencies": {

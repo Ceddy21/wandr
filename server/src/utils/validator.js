@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 const SPECIAL_CHARS = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?`~]/;
 
 const strongPassword = z
@@ -29,6 +30,18 @@ export const verifySchema = z.object({
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
   newPassword: strongPassword,
+});
+
+// ─── NEW: password reset validation ─────────────────────
+export const resetPasswordSchema = z.object({
+  email: z.email({ message: 'Please enter a valid email address' }),
+  code: z.string().length(6, 'Verification code must be exactly 6 digits'),
+  newPassword: strongPassword,
+});
+
+// ─── Also for forgot/verify reset code (email-only validation) ──
+export const forgotPasswordSchema = z.object({
+  email: z.email({ message: 'Please enter a valid email address' }),
 });
 
 export const resendVerificationSchema = z.object({

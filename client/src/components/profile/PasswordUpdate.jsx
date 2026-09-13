@@ -1,13 +1,23 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Loader } from 'lucide-react';
+import { Loader, Eye, EyeOff } from 'lucide-react';
 import { authService } from '../../services/authService';
 
 const PasswordUpdate = ({ isGoogleUser }) => {
+  const navigate = useNavigate();
+
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [confirmError, setConfirmError] = useState('');
 
   if (isGoogleUser) {
     return (
@@ -20,75 +30,165 @@ const PasswordUpdate = ({ isGoogleUser }) => {
     );
   }
 
+  const mismatch = confirmPassword.length > 0 && newPassword !== confirmPassword;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setConfirmError('');
 
+    // ─── Client-side validation ───────────────────────────
     if (!currentPassword || !newPassword || !confirmPassword) {
-      toast.error('Please fill in all fields');
+      setError('Please fill in all fields.');
       return;
     }
-    if (newPassword.length < 6) {
-      toast.error('New password must be at least 6 characters');
+    if (newPassword.length < 8) {
+      setError('New password must be at least 8 characters.');
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error('New passwords do not match');
+      setConfirmError('New passwords do not match.');
       return;
     }
 
     setSaving(true);
     try {
       await authService.changePassword({ currentPassword, newPassword });
-      toast.success('Password updated');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
+
+      // ─── Success: clear session and force re-login ─────
+      toast.success('Password updated. Please log in again.', {
+        duration: 2500,
+      });
+
+      localStorage.removeItem('user');
+
+      // Small delay so the toast is visible before redirect
+      setTimeout(() => {
+        navigate('/login?reason=session_expired', { replace: true });
+      }, 800);
     } catch (err) {
-      toast.error(err.message || 'Failed to change password');
-    } finally {
+      // ─── Error: stay on page, show inline error ────────
+      const msg = err.message || 'Failed to change password';
+
+      if (msg.toLowerCase().includes('current password')) {
+        setError('Current password is incorrect.');
+      } else {
+        setError(msg);
+      }
       setSaving(false);
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="max-w-md space-y-4">
+
+      {error && (
+        <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        </div>
+      )}
+
+      {/* Current Password */}
       <div>
         <label className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
           Current Password
         </label>
-        <input
-          type="password"
-          value={currentPassword}
-          onChange={(e) => setCurrentPassword(e.target.value)}
-          autoComplete="current-password"
-          className="w-full px-4 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] transition-all"
-        />
+        <div className="relative">
+          <input
+            type={showCurrent ? 'text' : 'password'}
+            value={currentPassword}
+            onChange={(e) => {
+              setCurrentPassword(e.target.value);
+              if (error) setError('');
+            }}
+            autoComplete="current-password"
+            className={`w-full px-4 py-2.5 pr-12 rounded-lg border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text focus:outline-none focus:ring-2 transition-all ${
+              error
+                ? 'border-red-400 dark:border-red-600 focus:ring-red-500'
+                : 'border-[#e8eaed] dark:border-dark-border focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51]'
+            }`}
+          />
+          <button
+            type="button"
+            onClick={() => setShowCurrent(!showCurrent)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-warm-grey dark:text-dark-text-secondary hover:text-[#2D6A4F] dark:hover:text-[#E76F51] transition-colors"
+            aria-label={showCurrent ? 'Hide password' : 'Show password'}
+          >
+            {showCurrent ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+          </button>
+        </div>
       </div>
 
+      {/* New Password */}
       <div>
         <label className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
           New Password
         </label>
-        <input
-          type="password"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          autoComplete="new-password"
-          className="w-full px-4 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] transition-all"
-        />
+        <div className="relative">
+          <input
+            type={showNew ? 'text' : 'password'}
+            value={newPassword}
+            onChange={(e) => {
+              setNewPassword(e.target.value);
+              if (error) setError('');
+              if (confirmError) setConfirmError('');
+            }}
+            autoComplete="new-password"
+            className={`w-full px-4 py-2.5 pr-12 rounded-lg border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text focus:outline-none focus:ring-2 transition-all ${
+              error
+                ? 'border-red-400 dark:border-red-600 focus:ring-red-500'
+                : 'border-[#e8eaed] dark:border-dark-border focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51]'
+            }`}
+          />
+          <button
+            type="button"
+            onClick={() => setShowNew(!showNew)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-warm-grey dark:text-dark-text-secondary hover:text-[#2D6A4F] dark:hover:text-[#E76F51] transition-colors"
+            aria-label={showNew ? 'Hide password' : 'Show password'}
+          >
+            {showNew ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+          </button>
+        </div>
+        <p className="text-xs text-warm-grey dark:text-dark-text-secondary mt-1">
+          At least 8 characters, with uppercase, lowercase, number, and special character.
+        </p>
       </div>
 
+      {/* Confirm New Password */}
       <div>
         <label className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
           Confirm New Password
         </label>
-        <input
-          type="password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          autoComplete="new-password"
-          className="w-full px-4 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] transition-all"
-        />
+        <div className="relative">
+          <input
+            type={showConfirm ? 'text' : 'password'}
+            value={confirmPassword}
+            onChange={(e) => {
+              setConfirmPassword(e.target.value);
+              if (confirmError) setConfirmError('');
+            }}
+            autoComplete="new-password"
+            className={`w-full px-4 py-2.5 pr-12 rounded-lg border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text focus:outline-none focus:ring-2 transition-all ${
+              mismatch || confirmError
+                ? 'border-red-400 dark:border-red-600 focus:ring-red-500'
+                : 'border-[#e8eaed] dark:border-dark-border focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51]'
+            }`}
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirm(!showConfirm)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-warm-grey dark:text-dark-text-secondary hover:text-[#2D6A4F] dark:hover:text-[#E76F51] transition-colors"
+            aria-label={showConfirm ? 'Hide password' : 'Show password'}
+          >
+            {showConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+          </button>
+        </div>
+
+        {(mismatch || confirmError) && (
+          <p className="text-xs text-red-600 dark:text-red-400 mt-1.5">
+            {confirmError || 'New passwords do not match.'}
+          </p>
+        )}
       </div>
 
       <button

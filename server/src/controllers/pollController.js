@@ -10,6 +10,11 @@ const verifyTripAccess = async (tripId, userId) => {
   });
 };
 
+const emitTripEvent = (req, tripId, eventName, payload) => {
+  const io = req.app.get('io');
+  if (io) io.to(`trip:${tripId}`).emit(eventName, payload);
+};
+
 export const getPolls = async (req, res) => {
   try {
     const trip = await verifyTripAccess(req.params.id, req.userId);
@@ -71,8 +76,7 @@ export const addPoll = async (req, res) => {
       tripName: trip.name,
     });
 
-    const io = req.app.get('io');
-    if (io) io.to(`trip:${req.params.id}`).emit('poll-updated');
+    emitTripEvent(req, req.params.id, 'polls-changed', {});
 
     res.status(201).json(poll);
   } catch (error) {
@@ -110,8 +114,7 @@ export const deletePoll = async (req, res) => {
       tripName: trip.name,
     });
 
-    const io = req.app.get('io');
-    if (io) io.to(`trip:${req.params.id}`).emit('poll-updated');
+    emitTripEvent(req, req.params.id, 'polls-changed', {});
 
     res.json({ message: 'Poll deleted' });
   } catch (error) {
@@ -163,8 +166,7 @@ export const addPollChoice = async (req, res) => {
       tripName: trip.name,
     });
 
-    const io = req.app.get('io');
-    if (io) io.to(`trip:${req.params.id}`).emit('poll-updated');
+    emitTripEvent(req, req.params.id, 'polls-changed', {});
 
     res.json(poll);
   } catch (error) {
@@ -208,8 +210,7 @@ export const deletePollChoice = async (req, res) => {
       tripName: trip.name,
     });
 
-    const io = req.app.get('io');
-    if (io) io.to(`trip:${req.params.id}`).emit('poll-updated');
+    emitTripEvent(req, req.params.id, 'polls-changed', {});
 
     res.json(poll);
   } catch (error) {
@@ -250,8 +251,7 @@ export const votePoll = async (req, res) => {
 
     await poll.save();
 
-    const io = req.app.get('io');
-    if (io) io.to(`trip:${req.params.id}`).emit('poll-updated');
+    emitTripEvent(req, req.params.id, 'polls-changed', {});
 
     res.json(poll);
   } catch (error) {

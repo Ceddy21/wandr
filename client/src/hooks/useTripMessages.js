@@ -1,16 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
-import { io } from 'socket.io-client';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { tripService } from '../services/tripService';
-
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { getSocket, joinTripRoom, leaveTripRoom } from '../services/socketService';
 
 export const useTripMessages = (tripId) => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newMessage, setNewMessage] = useState('');
-  const socketRef = useRef(null);
 
+  // ─── Fetch initial messages ──────────────────────────────
   useEffect(() => {
     const fetchMessages = async () => {
       if (!tripId) return;
@@ -27,33 +25,27 @@ export const useTripMessages = (tripId) => {
     fetchMessages();
   }, [tripId]);
 
+  // ─── Subscribe to socket events ──────────────────────────
   useEffect(() => {
     if (!tripId) return;
 
-    const socket = io(SOCKET_URL, {
-      withCredentials: true,
-      transports: ['websocket', 'polling'],
-    });
-    socketRef.current = socket;
+    const socket = getSocket();
+    joinTripRoom(tripId);
 
-    socket.on('connect', () => {
-      socket.emit('join-trip', tripId);
-    });
-
-    socket.on('new-message', (message) => {
+    const handleNewMessage = (message) => {
       setMessages((prev) => {
         if (prev.some((m) => m._id === message._id)) return prev;
         return [...prev, message];
       });
-    });
+    };
 
-    socket.on('message-updated', (message) => {
+    const handleMessageUpdated = (message) => {
       setMessages((prev) =>
         prev.map((m) => (m._id === message._id ? message : m))
       );
-    });
+    };
 
-    socket.on('messages-read', ({ userId }) => {
+    const handleMessagesRead = ({ userId }) => {
       setMessages((prev) =>
         prev.map((m) =>
           m.userId !== userId && m.status !== 'read'
@@ -61,14 +53,21 @@ export const useTripMessages = (tripId) => {
             : m
         )
       );
-    });
+    };
+
+    socket.on('new-message', handleNewMessage);
+    socket.on('message-updated', handleMessageUpdated);
+    socket.on('messages-read', handleMessagesRead);
 
     return () => {
-      socket.emit('leave-trip', tripId);
-      socket.disconnect();
+      socket.off('new-message', handleNewMessage);
+      socket.off('message-updated', handleMessageUpdated);
+      socket.off('messages-read', handleMessagesRead);
+      leaveTripRoom(tripId);
     };
   }, [tripId]);
 
+  // ─── Actions ─────────────────────────────────────────────
   const sendMessage = async (imageUrl = '') => {
     const text = newMessage.trim();
     if (!text && !imageUrl) return { success: false };

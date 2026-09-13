@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { tripService } from '../services/tripService';
+import { getSocket, joinTripRoom, leaveTripRoom } from '../services/socketService';
 
 const getDefaultPaidBy = (trip) => {
   if (!trip?.members?.length) return '';
@@ -21,6 +22,7 @@ export const useTripExpenses = (tripId, trip) => {
     date: new Date().toISOString().split('T')[0],
   });
 
+  // ─── Fetch initial expenses ──────────────────────────────
   useEffect(() => {
     const fetchExpenses = async () => {
       if (!tripId) return;
@@ -37,6 +39,7 @@ export const useTripExpenses = (tripId, trip) => {
     fetchExpenses();
   }, [tripId]);
 
+  // ─── Set default paidBy once trip members are available ──
   useEffect(() => {
     if (trip?.members?.length) {
       setNewExpense((prev) =>
@@ -45,6 +48,43 @@ export const useTripExpenses = (tripId, trip) => {
     }
   }, [trip]);
 
+  // ─── Subscribe to socket events ──────────────────────────
+  useEffect(() => {
+    if (!tripId) return;
+
+    const socket = getSocket();
+    joinTripRoom(tripId);
+
+    const handleAdded = ({ expense }) => {
+      setExpenses((prev) => {
+        if (prev.some((e) => e._id === expense._id)) return prev;
+        return [expense, ...prev];
+      });
+    };
+
+    const handleUpdated = ({ expense }) => {
+      setExpenses((prev) =>
+        prev.map((e) => (e._id === expense._id ? expense : e))
+      );
+    };
+
+    const handleDeleted = ({ expenseId }) => {
+      setExpenses((prev) => prev.filter((e) => e._id !== expenseId));
+    };
+
+    socket.on('expense-added', handleAdded);
+    socket.on('expense-updated', handleUpdated);
+    socket.on('expense-deleted', handleDeleted);
+
+    return () => {
+      socket.off('expense-added', handleAdded);
+      socket.off('expense-updated', handleUpdated);
+      socket.off('expense-deleted', handleDeleted);
+      leaveTripRoom(tripId);
+    };
+  }, [tripId]);
+
+  // ─── Actions ─────────────────────────────────────────────
   const addExpense = async () => {
     if (!newExpense.description || !newExpense.amount || !newExpense.paidBy) {
       toast.error('Please fill in all fields');
@@ -67,7 +107,10 @@ export const useTripExpenses = (tripId, trip) => {
         date: newExpense.date,
       });
 
-      setExpenses((prev) => [created, ...prev]);
+      setExpenses((prev) => {
+        if (prev.some((e) => e._id === created._id)) return prev;
+        return [created, ...prev];
+      });
 
       setNewExpense({
         description: '',

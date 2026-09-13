@@ -10,9 +10,30 @@ export const protect = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.userId = decoded.userId;
 
-    const user = await User.findById(req.userId).select('-passwordHash -verificationCode');
+    const user = await User.findById(decoded.userId).select(
+      '-passwordHash -verificationCode'
+    );
+
+    if (!user) {
+      return res.status(401).json({ message: 'Not authorized. Please log in.' });
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // SESSION REVOCATION CHECK
+    // If the token's version doesn't match the user's current
+    // version, the session was invalidated (e.g. password change).
+    // ═══════════════════════════════════════════════════════
+    const tokenVersion = decoded.tokenVersion || 0;
+    const currentVersion = user.tokenVersion || 0;
+
+    if (tokenVersion !== currentVersion) {
+      return res.status(401).json({
+        message: 'Session expired. Please log in again.',
+      });
+    }
+
+    req.userId = user._id;
     req.user = user;
 
     next();

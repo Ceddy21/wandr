@@ -6,7 +6,7 @@ import CreateTripModal from '../components/ui/CreateTripModal';
 import { useUser } from '../hooks/useUser';
 import { useTrips } from '../hooks/useTrips';
 import { useRecentActivities } from '../hooks/useRecentActivity';
-import { DashboardLoading } from '../components/dashboard/Dashboardloading';
+import { DashboardLoading } from '../components/dashboard/DashboardLoading';
 import { DashboardError } from '../components/dashboard/DashboardError';
 import { WelcomeBanner } from '../components/dashboard/WelcomeBanner';
 import { TripStats } from '../components/dashboard/TripStats';
