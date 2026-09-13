@@ -51,7 +51,7 @@ function AppContent() {
     <div className="min-h-screen bg-warm-white dark:bg-dark-bg transition-colors duration-300">
       {isDashboardPage && <Header theme={theme} toggleTheme={toggleTheme} />}
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Home theme={theme} toggleTheme={toggleTheme} />} />
         <Route path="/login" element={<Login theme={theme} toggleTheme={toggleTheme} />} />
         <Route path="/signup" element={<Signup theme={theme} toggleTheme={toggleTheme} />} />
         <Route path="/dashboard" element={<Dashboard />} />
