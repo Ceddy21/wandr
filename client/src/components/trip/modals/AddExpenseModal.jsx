@@ -6,6 +6,35 @@ import { uploadToCloudinary } from '../../../utils/CloudinaryUploads';
 const PAYMENT_METHODS = ['Cash', 'GCash', 'PayMaya', 'Maribank', 'BPI', 'BDO', 'Other'];
 const ONLINE_METHODS = ['GCash', 'PayMaya', 'Maribank', 'BPI', 'BDO', 'Other'];
 
+const RECEIPT_MAX_SIZE = 5 * 1024 * 1024;
+const RECEIPT_ALLOWED_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'application/pdf',
+];
+const RECEIPT_ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'pdf'];
+
+const validateReceiptFile = (file) => {
+  if (!file) return 'No file selected';
+
+  if (file.size > RECEIPT_MAX_SIZE) {
+    return 'File too large. Maximum size is 5 MB.';
+  }
+
+  const ext = file.name.split('.').pop()?.toLowerCase() || '';
+  if (!RECEIPT_ALLOWED_EXTENSIONS.includes(ext)) {
+    return 'Invalid file extension. Use JPG, PNG, WEBP, or PDF.';
+  }
+
+  if (file.type && !RECEIPT_ALLOWED_TYPES.includes(file.type)) {
+    return 'Invalid file type. Use JPG, PNG, WEBP, or PDF.';
+  }
+
+  return null;
+};
+
 export const AddExpenseModal = ({
   isOpen,
   onClose,
@@ -25,12 +54,10 @@ export const AddExpenseModal = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please upload an image file');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be under 5MB');
+    const validationError = validateReceiptFile(file);
+    if (validationError) {
+      toast.error(validationError);
+      if (e.target) e.target.value = '';
       return;
     }
 
@@ -136,7 +163,20 @@ export const AddExpenseModal = ({
 
               {uploadedUrl ? (
                 <div className="border border-[#e8eaed] dark:border-dark-border rounded-lg overflow-hidden">
-                  <img src={uploadedUrl} alt="Receipt" className="w-full h-40 object-contain bg-[#F8F9FA]" />
+                  {uploadedUrl.match(/\.pdf($|\?)/i) ? (
+                    <div className="w-full h-40 flex items-center justify-center bg-[#F8F9FA] dark:bg-dark-card/50">
+                      <a
+                        href={uploadedUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-terracotta hover:underline"
+                      >
+                        View PDF Receipt →
+                      </a>
+                    </div>
+                  ) : (
+                    <img src={uploadedUrl} alt="Receipt" className="w-full h-40 object-contain bg-[#F8F9FA]" />
+                  )}
                   <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20">
                     <span className="flex items-center gap-1 text-xs text-green-700 dark:text-green-400 font-medium">
                       <Check className="w-3 h-3" /> Uploaded
@@ -163,12 +203,12 @@ export const AddExpenseModal = ({
                       <span className="text-sm text-deep-charcoal dark:text-dark-text font-medium">
                         Click to upload receipt
                       </span>
-                      <span className="text-xs text-warm-grey">PNG, JPG up to 5MB</span>
+                      <span className="text-xs text-warm-grey">JPG, PNG, WEBP, PDF up to 5MB</span>
                     </>
                   )}
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
                     onChange={handleFileUpload}
                     disabled={uploading}
                     className="hidden"

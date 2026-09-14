@@ -22,7 +22,6 @@ function GoogleCallback({ theme, toggleTheme }) {
       return;
     }
 
-    // ═══ SESSION GUARD — per browser, per code ═══
     const guardKey = `oauth_processed_${code}`;
     if (sessionStorage.getItem(guardKey)) {
       console.log('[GoogleCallback] Code already processed, skipping');
@@ -45,14 +44,12 @@ function GoogleCallback({ theme, toggleTheme }) {
           throw new Error(data.message || 'Google login failed');
         }
 
-        // Clean up the guard — the code is consumed
         sessionStorage.removeItem(guardKey);
 
         localStorage.setItem('user', JSON.stringify(data.user));
         navigate('/dashboard');
       } catch (err) {
         console.error('Google login error:', err.message);
-        // Clear the guard so the user can retry
         sessionStorage.removeItem(guardKey);
         navigate('/login?error=google_login_failed');
       }

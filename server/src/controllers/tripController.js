@@ -10,7 +10,6 @@ const findMemberTrip = (tripId, userId) =>
     $or: [{ userId }, { members: userId }],
   });
 
-// Owner ONLY (delete, archive, remove member, edit)
 const findOwnedTrip = (tripId, userId) =>
   Trip.findOne({ _id: tripId, userId });
 
@@ -302,7 +301,6 @@ export const getOrCreateShareCode = async (req, res) => {
     const trip = await findMemberTrip(req.params.id, req.userId);
     if (!trip) return res.status(404).json({ message: 'Trip not found' });
 
-    // Already has a code — return it
     if (trip.shareCode) {
       return res.json({ shareCode: trip.shareCode });
     }

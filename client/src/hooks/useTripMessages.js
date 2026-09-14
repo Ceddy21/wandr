@@ -8,7 +8,6 @@ export const useTripMessages = (tripId) => {
   const [loading, setLoading] = useState(true);
   const [newMessage, setNewMessage] = useState('');
 
-  // ─── Fetch initial messages ──────────────────────────────
   useEffect(() => {
     const fetchMessages = async () => {
       if (!tripId) return;
@@ -25,7 +24,6 @@ export const useTripMessages = (tripId) => {
     fetchMessages();
   }, [tripId]);
 
-  // ─── Subscribe to socket events ──────────────────────────
   useEffect(() => {
     if (!tripId) return;
 
@@ -67,7 +65,6 @@ export const useTripMessages = (tripId) => {
     };
   }, [tripId]);
 
-  // ─── Actions ─────────────────────────────────────────────
   const sendMessage = async (imageUrl = '') => {
     const text = newMessage.trim();
     if (!text && !imageUrl) return { success: false };

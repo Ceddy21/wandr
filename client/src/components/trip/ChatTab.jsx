@@ -12,9 +12,38 @@ import {
 import toast from 'react-hot-toast';
 import { uploadToCloudinary } from '../../utils/CloudinaryUploads';
 
+const CHAT_IMAGE_MAX_SIZE = 5 * 1024 * 1024;
+const CHAT_IMAGE_ALLOWED_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+];
+const CHAT_IMAGE_ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+
+const validateChatImage = (file) => {
+  if (!file) return 'No file selected';
+
+  if (file.size > CHAT_IMAGE_MAX_SIZE) {
+    return 'Image too large. Maximum size is 5 MB.';
+  }
+
+  const ext = file.name.split('.').pop()?.toLowerCase() || '';
+  if (!CHAT_IMAGE_ALLOWED_EXTENSIONS.includes(ext)) {
+    return 'Invalid file extension. Use JPG, PNG, WEBP, or GIF.';
+  }
+
+  if (file.type && !CHAT_IMAGE_ALLOWED_TYPES.includes(file.type)) {
+    return 'Invalid image type. Use JPG, PNG, WEBP, or GIF.';
+  }
+
+  return null;
+};
+
 function ChatTab({
   currentUserId,
-  messages = [],          
+  messages = [],
   newMessage,
   setNewMessage,
   onSendMessage,
@@ -100,12 +129,10 @@ function ChatTab({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please upload an image');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be under 5MB');
+    const validationError = validateChatImage(file);
+    if (validationError) {
+      toast.error(validationError);
+      if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
 
@@ -317,7 +344,7 @@ function ChatTab({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png,image/webp,image/gif"
           onChange={handleImageUpload}
           className="hidden"
         />

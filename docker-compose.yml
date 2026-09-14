@@ -38,6 +38,7 @@ services:
         VITE_CLOUDINARY_CLOUD_NAME: sqlrnnth
         VITE_CLOUDINARY_UPLOAD_PRESET: wandr_uploads
         VITE_CLOUDINARY_PROFILE_PRESET: wandr_profile
+        VITE_GEONAMES_USERNAME: ceddyeds
     container_name: wandr-client
     restart: unless-stopped
     ports:

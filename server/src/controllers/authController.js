@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import Session from '../models/Session.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
@@ -27,10 +28,6 @@ import Activity from '../models/Activity.js';
 
 dotenv.config({ path: './.env' });
 
-// ═══════════════════════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════════════════════
-
 const createGoogleClient = () => new OAuth2Client(
   process.env.GMAIL_CLIENT_ID,
   process.env.GMAIL_CLIENT_SECRET,
@@ -39,9 +36,19 @@ const createGoogleClient = () => new OAuth2Client(
 
 const hashCode = (code) => crypto.createHash('sha256').update(code).digest('hex');
 
-// ═══════════════════════════════════════════════════════════
-// REGISTER / VERIFY
-// ═══════════════════════════════════════════════════════════
+const recordSession = async (userId, tokenVersion, req) => {
+  try {
+    await Session.create({
+      userId,
+      tokenVersion,
+      ip: req.ip || '',
+      userAgent: req.headers['user-agent']?.slice(0, 200) || '',
+      lastActive: new Date(),
+    });
+  } catch (err) {
+    console.error('Session log error:', err.message);
+  }
+};
 
 export const register = async (req, res) => {
   try {
@@ -78,7 +85,6 @@ export const register = async (req, res) => {
   } catch (error) {
     if (error.name === 'ZodError') {
       return res.status(400).json({ message: error.issues?.[0]?.message || error.errors?.[0]?.message || 'Validation error' });
-
     }
     console.error('Register error:', error);
     res.status(500).json({ message: 'Server error during registration.' });
@@ -116,16 +122,11 @@ export const verify = async (req, res) => {
   } catch (error) {
     if (error.name === 'ZodError') {
       return res.status(400).json({ message: error.issues?.[0]?.message || error.errors?.[0]?.message || 'Validation error' });
-
     }
     console.error('Verify error:', error);
     res.status(500).json({ message: 'Server error during verification.' });
   }
 };
-
-// ═══════════════════════════════════════════════════════════
-// LOGIN / LOGOUT / ME
-// ═══════════════════════════════════════════════════════════
 
 export const login = async (req, res) => {
   try {
@@ -136,7 +137,6 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials.' });
     }
 
-    // ═══ Account lockout check ═══════════════════════════
     if (user.lockedUntil && user.lockedUntil > new Date()) {
       const minutesLeft = Math.ceil(
         (user.lockedUntil.getTime() - Date.now()) / 60000
@@ -152,7 +152,6 @@ export const login = async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
 
-    // ═══ Wrong password — increment counter ══════════════
     if (!isMatch) {
       user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
 
@@ -170,7 +169,6 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials.' });
     }
 
-    // ═══ Success — reset counters ════════════════════════
     let needsSave = false;
 
     if (user.failedLoginAttempts > 0) {
@@ -195,15 +193,17 @@ export const login = async (req, res) => {
         tokenVersion: user.tokenVersion || 0,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '24h' }
     );
 
-    res.cookie('wanderly_token', token, {
+    res.cookie('wandr_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      sameSite: process.env.COOKIE_SAME_SITE || 'strict',
+      maxAge: 24 * 60 * 60 * 1000,
     });
+
+    await recordSession(user._id, user.tokenVersion || 0, req);
 
     res.json({
       message: 'Login successful!',
@@ -218,7 +218,6 @@ export const login = async (req, res) => {
   } catch (error) {
     if (error.name === 'ZodError') {
       return res.status(400).json({ message: error.issues?.[0]?.message || error.errors?.[0]?.message || 'Validation error' });
-
     }
     console.error('Login error:', error);
     res.status(500).json({ message: 'Server error during login.' });
@@ -226,7 +225,17 @@ export const login = async (req, res) => {
 };
 
 export const logout = async (req, res) => {
-  res.clearCookie('wanderly_token');
+  try {
+    await Session.findOneAndUpdate(
+      { userId: req.userId, revokedAt: null },
+      { $set: { revokedAt: new Date() } },
+      { sort: { createdAt: -1 } }
+    );
+  } catch (err) {
+    console.error('Logout session update error:', err.message);
+  }
+
+  res.clearCookie('wandr_token');
   res.json({ message: 'Logged out successfully.' });
 };
 
@@ -242,9 +251,44 @@ export const getMe = async (req, res) => {
   }
 };
 
-// ═══════════════════════════════════════════════════════════
-// PROFILE
-// ═══════════════════════════════════════════════════════════
+export const getSessions = async (req, res) => {
+  try {
+    const sessions = await Session.find({
+      userId: req.userId,
+      revokedAt: null,
+    })
+      .sort({ lastActive: -1 })
+      .limit(20)
+      .lean();
+
+    res.json({ sessions });
+  } catch (error) {
+    console.error('Get sessions error:', error);
+    res.status(500).json({ message: 'Failed to fetch sessions.' });
+  }
+};
+
+export const revokeSession = async (req, res) => {
+  try {
+    const session = await Session.findOne({
+      _id: req.params.sessionId,
+      userId: req.userId,
+      revokedAt: null,
+    });
+
+    if (!session) {
+      return res.status(404).json({ message: 'Session not found.' });
+    }
+
+    session.revokedAt = new Date();
+    await session.save();
+
+    res.json({ message: 'Session revoked.' });
+  } catch (error) {
+    console.error('Revoke session error:', error);
+    res.status(500).json({ message: 'Failed to revoke session.' });
+  }
+};
 
 export const updateProfile = async (req, res) => {
   try {
@@ -287,10 +331,6 @@ export const updateProfile = async (req, res) => {
   }
 };
 
-// ═══════════════════════════════════════════════════════════
-// FORGOT PASSWORD
-// ═══════════════════════════════════════════════════════════
-
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -301,7 +341,6 @@ export const forgotPassword = async (req, res) => {
 
     const user = await User.findOne({ email: email.toLowerCase().trim() });
 
-    // ═══ Uniform response — don't leak whether email exists ═══
     const GENERIC_RESPONSE = {
       message: 'If an account with that email exists, a password reset code has been sent.',
     };
@@ -310,12 +349,10 @@ export const forgotPassword = async (req, res) => {
       return res.status(200).json(GENERIC_RESPONSE);
     }
 
-    // Google users — still send generic response
     if (user.isGoogleUser) {
       return res.status(200).json(GENERIC_RESPONSE);
     }
 
-    // Rate limit — but don't leak via status code
     if (
       user.resetCodeExpires &&
       user.resetCodeExpires > new Date(Date.now() + 9 * 60 * 1000)
@@ -392,25 +429,24 @@ export const resetPassword = async (req, res) => {
     user.failedLoginAttempts = 0;
     user.lockedUntil = null;
 
-    // Invalidate all existing sessions
     user.tokenVersion = (user.tokenVersion || 0) + 1;
 
     await user.save();
+
+    await Session.updateMany(
+      { userId: user._id, revokedAt: null },
+      { $set: { revokedAt: new Date() } }
+    );
 
     res.json({ message: 'Password reset successful. You can now log in.' });
   } catch (error) {
     if (error.name === 'ZodError') {
       return res.status(400).json({ message: error.issues?.[0]?.message || error.errors?.[0]?.message || 'Validation error' });
-
     }
     console.error('Reset password error:', error);
     res.status(500).json({ message: 'Server error.' });
   }
 };
-
-// ═══════════════════════════════════════════════════════════
-// ACCOUNT DELETION
-// ═══════════════════════════════════════════════════════════
 
 export const requestAccountDeletion = async (req, res) => {
   try {
@@ -498,22 +534,20 @@ export const deleteAccount = async (req, res) => {
       Trip.updateMany({ members: userId }, { $pull: { members: userId } }),
       Activity.updateMany({ readBy: userId }, { $pull: { readBy: userId } }),
 
+      Session.deleteMany({ userId }),
+
       Trip.deleteMany({ userId }),
     ]);
 
     await user.deleteOne();
 
-    res.clearCookie('wanderly_token');
+    res.clearCookie('wandr_token');
     res.json({ message: 'Account and all associated data deleted.' });
   } catch (error) {
     console.error('Delete account error:', error);
     res.status(500).json({ message: 'Server error.' });
   }
 };
-
-// ═══════════════════════════════════════════════════════════
-// RESEND VERIFICATION / CHANGE PASSWORD
-// ═══════════════════════════════════════════════════════════
 
 export const resendVerification = async (req, res) => {
   try {
@@ -525,7 +559,6 @@ export const resendVerification = async (req, res) => {
 
     const user = await User.findOne({ email: email.toLowerCase().trim() });
 
-    // ═══ Uniform response ═══
     const GENERIC_RESPONSE = {
       message: 'If an account with that email exists and is unverified, a new code has been sent.',
     };
@@ -577,12 +610,15 @@ export const changePassword = async (req, res) => {
     const passwordHash = await bcrypt.hash(newPassword, salt);
     user.passwordHash = passwordHash;
 
-    // Invalidate all existing sessions
     user.tokenVersion = (user.tokenVersion || 0) + 1;
 
     await user.save();
 
-    // ═══ Issue a fresh JWT so this session stays valid ═══
+    await Session.updateMany(
+      { userId: user._id, revokedAt: null },
+      { $set: { revokedAt: new Date() } }
+    );
+
     const newToken = jwt.sign(
       {
         userId: user._id,
@@ -590,30 +626,27 @@ export const changePassword = async (req, res) => {
         tokenVersion: user.tokenVersion,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '24h' }
     );
 
-    res.cookie('wanderly_token', newToken, {
+    res.cookie('wandr_token', newToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      sameSite: process.env.COOKIE_SAME_SITE || 'strict',
+      maxAge: 24 * 60 * 60 * 1000,
     });
+
+    await recordSession(user._id, user.tokenVersion, req);
 
     res.json({ message: 'Password updated successfully.' });
   } catch (error) {
     if (error.name === 'ZodError') {
       return res.status(400).json({ message: error.issues?.[0]?.message || error.errors?.[0]?.message || 'Validation error' });
-
     }
     console.error('Change password error:', error);
     res.status(500).json({ message: 'Server error.' });
   }
 };
-
-// ═══════════════════════════════════════════════════════════
-// GOOGLE OAUTH
-// ═══════════════════════════════════════════════════════════
 
 export const googleLogin = async (req, res) => {
   try {
@@ -647,6 +680,13 @@ export const googleLogin = async (req, res) => {
     let user = await User.findOne({ email });
 
     if (user) {
+      if (!user.googleId && !user.isVerified) {
+        return res.status(403).json({
+          message:
+            'An account with this email already exists but is not verified. Please verify it first or use a different email.',
+        });
+      }
+
       if (!user.googleId) {
         user.googleId = googleId;
         user.isGoogleUser = true;
@@ -679,15 +719,17 @@ export const googleLogin = async (req, res) => {
         tokenVersion: user.tokenVersion || 0,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '24h' }
     );
 
-    res.cookie('wanderly_token', token, {
+    res.cookie('wandr_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      sameSite: process.env.COOKIE_SAME_SITE || 'strict',
+      maxAge: 24 * 60 * 60 * 1000,
     });
+
+    await recordSession(user._id, user.tokenVersion || 0, req);
 
     res.json({
       message: 'Google login successful!',
@@ -759,6 +801,12 @@ export const googleCallback = async (req, res) => {
     let user = await User.findOne({ email });
 
     if (user) {
+      if (!user.googleId && !user.isVerified) {
+        return res.redirect(
+          `${process.env.CLIENT_URL}/login?error=account_not_verified`
+        );
+      }
+
       if (!user.googleId) {
         user.googleId = googleId;
         user.isGoogleUser = true;
@@ -787,15 +835,17 @@ export const googleCallback = async (req, res) => {
         tokenVersion: user.tokenVersion || 0,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '24h' }
     );
 
-    res.cookie('wanderly_token', token, {
+    res.cookie('wandr_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      sameSite: process.env.COOKIE_SAME_SITE || 'strict',
+      maxAge: 24 * 60 * 60 * 1000,
     });
+
+    await recordSession(user._id, user.tokenVersion || 0, req);
 
     res.redirect(`${process.env.CLIENT_URL}/dashboard`);
   } catch (error) {

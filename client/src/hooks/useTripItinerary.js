@@ -13,7 +13,6 @@ export const useTripItinerary = (tripId) => {
     type: 'activity',
   });
 
-  // ─── Fetch initial itinerary ─────────────────────────────
   useEffect(() => {
     const fetchItinerary = async () => {
       if (!tripId) return;
@@ -30,7 +29,6 @@ export const useTripItinerary = (tripId) => {
     fetchItinerary();
   }, [tripId]);
 
-  // ─── Subscribe to socket events ──────────────────────────
   useEffect(() => {
     if (!tripId) return;
 
@@ -66,7 +64,6 @@ export const useTripItinerary = (tripId) => {
     };
   }, [tripId]);
 
-  // ─── Actions ─────────────────────────────────────────────
   const addActivity = async () => {
     if (!newActivity.title || !newActivity.time) {
       toast.error('Please fill in all fields');

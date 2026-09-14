@@ -22,7 +22,6 @@ export const useTripExpenses = (tripId, trip) => {
     date: new Date().toISOString().split('T')[0],
   });
 
-  // ─── Fetch initial expenses ──────────────────────────────
   useEffect(() => {
     const fetchExpenses = async () => {
       if (!tripId) return;
@@ -39,7 +38,6 @@ export const useTripExpenses = (tripId, trip) => {
     fetchExpenses();
   }, [tripId]);
 
-  // ─── Set default paidBy once trip members are available ──
   useEffect(() => {
     if (trip?.members?.length) {
       setNewExpense((prev) =>
@@ -48,7 +46,6 @@ export const useTripExpenses = (tripId, trip) => {
     }
   }, [trip]);
 
-  // ─── Subscribe to socket events ──────────────────────────
   useEffect(() => {
     if (!tripId) return;
 
@@ -84,7 +81,6 @@ export const useTripExpenses = (tripId, trip) => {
     };
   }, [tripId]);
 
-  // ─── Actions ─────────────────────────────────────────────
   const addExpense = async () => {
     if (!newExpense.description || !newExpense.amount || !newExpense.paidBy) {
       toast.error('Please fill in all fields');

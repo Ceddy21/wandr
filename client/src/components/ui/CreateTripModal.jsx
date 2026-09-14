@@ -46,7 +46,7 @@ function CreateTripModal({ isOpen, onClose, onSubmit, newTrip, setNewTrip }) {
         return;
       }
 
-      const url = `http://api.geonames.org/searchJSON?country=PH&featureClass=P&name_startsWith=${encodeURIComponent(query)}&maxRows=10&username=${username}`;
+      const url = `https://secure.geonames.org/searchJSON?country=PH&featureClass=P&name_startsWith=${encodeURIComponent(query)}&maxRows=10&username=${username}`;
 
       const response = await fetch(url);
 

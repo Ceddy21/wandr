@@ -31,7 +31,7 @@ function Profile() {
         const { user: u } = await authService.getMe();
         if (cancelled) return;
         setUser(u);
-        syncUser(u);        // ← keep Header in sync
+        syncUser(u);       
       } catch (err) {
         toast.error(err.message || 'Failed to load profile');
       } finally {
@@ -49,6 +49,20 @@ function Profile() {
 
   const handleAvatarUpload = async (file) => {
     if (!file) return;
+
+    const MAX_SIZE = 2 * 1024 * 1024;
+    const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+
+    if (file.size > MAX_SIZE) {
+      toast.error('File too large. Maximum size is 2 MB.');
+      return;
+    }
+
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      toast.error('Invalid file type. Use JPG, PNG, or WEBP.');
+      return;
+    }
+
     setUploadingAvatar(true);
 
     try {
@@ -71,7 +85,7 @@ function Profile() {
         avatar: cloudData.secure_url,
       });
 
-      handleUserChange(updated);  
+      handleUserChange(updated);
       toast.success('Avatar updated!');
     } catch (err) {
       console.error(err);
@@ -129,7 +143,6 @@ function Profile() {
       </div>
 
       <div className="bg-white dark:bg-dark-card border border-[#e8eaed] dark:border-dark-border rounded-xl overflow-hidden shadow-sm">
-        {/* Avatar + header */}
         <div className="p-6 sm:p-8 border-b border-[#e8eaed] dark:border-dark-border">
           <div className="flex flex-col sm:flex-row sm:items-center gap-6">
             <div className="relative">
@@ -181,7 +194,6 @@ function Profile() {
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="flex border-b border-[#e8eaed] dark:border-dark-border px-6">
           {[
             { id: 'profile',  label: 'Profile',        icon: User },
@@ -206,7 +218,6 @@ function Profile() {
           })}
         </div>
 
-        {/* Tab body */}
         <div className="p-6 sm:p-8">
           {activeTab === 'profile' && (
             <EditProfileForm user={user} onUserChange={handleUserChange} />

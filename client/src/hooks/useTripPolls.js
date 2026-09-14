@@ -11,7 +11,6 @@ export const useTripPolls = (tripId) => {
     options: ['', ''],
   });
 
-  // ─── Fetch function (reusable for refetch) ───────────────
   const fetchPolls = useCallback(async (silent = false) => {
     if (!tripId) return;
     if (!silent) setLoading(true);
@@ -25,21 +24,18 @@ export const useTripPolls = (tripId) => {
     }
   }, [tripId]);
 
-  // ─── Initial fetch ───────────────────────────────────────
   useEffect(() => {
     fetchPolls();
   }, [fetchPolls]);
 
-  // ─── Subscribe to socket events ──────────────────────────
   useEffect(() => {
     if (!tripId) return;
 
     const socket = getSocket();
     joinTripRoom(tripId);
 
-    // Refetch on any poll change (create, delete, add choice, delete choice, vote)
     const handlePollsChanged = () => {
-      fetchPolls(true); // silent = true (don't show loading spinner)
+      fetchPolls(true); 
     };
 
     socket.on('polls-changed', handlePollsChanged);
@@ -50,7 +46,6 @@ export const useTripPolls = (tripId) => {
     };
   }, [tripId, fetchPolls]);
 
-  // ─── Actions ─────────────────────────────────────────────
   const createPoll = async () => {
     if (!newPoll.question || newPoll.options.some((o) => !o.trim())) {
       toast.error('Please fill in all fields');

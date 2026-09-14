@@ -106,7 +106,6 @@ function Hero({ theme, toggleTheme }) {
 
   return (
     <main className="relative overflow-hidden bg-warm-white dark:bg-dark-bg">
-      {/* ─── Theme toggle (floating top-right) ──────────────── */}
       {typeof toggleTheme === 'function' && (
         <button
           type="button"

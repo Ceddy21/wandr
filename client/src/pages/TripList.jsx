@@ -397,7 +397,6 @@ function TripList() {
             className="bg-white dark:bg-dark-card rounded-2xl w-full max-w-md shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#e8eaed] dark:border-dark-border">
               <div className="flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-terracotta dark:text-dark-terracotta" />
@@ -415,7 +414,6 @@ function TripList() {
               </button>
             </div>
 
-            {/* Body */}
             <div className="p-6 space-y-4">
               <p className="text-sm text-warm-grey dark:text-dark-text-secondary">
                 Ask the trip owner for a 6-character share code, then enter it below.

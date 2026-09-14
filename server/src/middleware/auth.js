@@ -3,7 +3,7 @@ import User from '../models/User.js';
 
 export const protect = async (req, res, next) => {
   try {
-    const token = req.cookies.wanderly_token;
+    const token = req.cookies.wandr_token;
 
     if (!token) {
       return res.status(401).json({ message: 'Not authorized. Please log in.' });
@@ -19,17 +19,34 @@ export const protect = async (req, res, next) => {
       return res.status(401).json({ message: 'Not authorized. Please log in.' });
     }
 
-    // ═══════════════════════════════════════════════════════
-    // SESSION REVOCATION CHECK
-    // If the token's version doesn't match the user's current
-    // version, the session was invalidated (e.g. password change).
-    // ═══════════════════════════════════════════════════════
     const tokenVersion = decoded.tokenVersion || 0;
     const currentVersion = user.tokenVersion || 0;
 
     if (tokenVersion !== currentVersion) {
       return res.status(401).json({
         message: 'Session expired. Please log in again.',
+      });
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    const hoursLeft = (decoded.exp - now) / 3600;
+
+    if (hoursLeft < 12) {
+      const newToken = jwt.sign(
+        {
+          userId: user._id,
+          email: user.email,
+          tokenVersion: user.tokenVersion || 0,
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+
+      res.cookie('wandr_token', newToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.COOKIE_SAME_SITE || 'strict',
+        maxAge: 24 * 60 * 60 * 1000,
       });
     }
 

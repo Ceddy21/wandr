@@ -54,7 +54,7 @@ function Signup({ theme, toggleTheme }) {
     if (passedCount === 2) return 1;
     if (passedCount === 3) return 2;
     if (passedCount === 4) return 3;
-    return 4; // all 5
+    return 4;
   }, [passedCount, password.length]);
 
   const strength = strengthIndex >= 0 ? STRENGTH_LEVELS[strengthIndex] : null;
@@ -195,7 +195,7 @@ function Signup({ theme, toggleTheme }) {
             <Plane className="w-5 h-5" />
           </div>
           <span className="font-serif text-2xl font-bold text-[#1A1A1A] dark:text-dark-text mt-2">
-            Wanderly
+            Wandr
           </span>
         </div>
 

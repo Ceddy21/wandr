@@ -3,6 +3,7 @@ import { io } from 'socket.io-client';
 const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 let socket = null;
+const roomCounts = new Map();
 
 export const getSocket = () => {
   if (!socket) {
@@ -12,7 +13,6 @@ export const getSocket = () => {
       autoConnect: true,
     });
 
-    // On reconnect, re-join all active trip rooms
     socket.on('connect', () => {
       roomCounts.forEach((count, tripId) => {
         if (count > 0) {
@@ -20,11 +20,13 @@ export const getSocket = () => {
         }
       });
     });
+
+    socket.on('error-trip-access', ({ message }) => {
+      console.warn('Socket trip access denied:', message);
+    });
   }
   return socket;
 };
-
-const roomCounts = new Map();
 
 export const joinTripRoom = (tripId) => {
   if (!tripId) return;

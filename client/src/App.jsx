@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import Header from './components/ui/Header';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -49,6 +50,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-warm-white dark:bg-dark-bg transition-colors duration-300">
+      <Toaster position="top-right" />
       {isDashboardPage && <Header theme={theme} toggleTheme={toggleTheme} />}
       <Routes>
         <Route path="/" element={<Home theme={theme} toggleTheme={toggleTheme} />} />
