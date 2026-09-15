@@ -82,6 +82,10 @@ router.post('/forgot-password', forgotPasswordLimiter, forgotPassword);
 router.post('/verify-reset-code', verifyLimiter, verifyResetCode);
 router.post('/reset-password', verifyLimiter, resetPassword);
 
+router.get('/socket-token', protect, (req, res) => {
+  res.json({ token: req.cookies.wandr_token });
+});
+
 router.get('/google/url', googleLimiter, getGoogleAuthUrl);
 router.post('/google/login', googleLimiter, googleLogin);
 router.get('/google/callback', googleCallback);

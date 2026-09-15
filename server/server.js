@@ -272,7 +272,9 @@ io.use(async (socket, next) => {
   try {
     const rawCookies = socket.request.headers.cookie || '';
     const cookies = cookie.parse(rawCookies);
-    const token = cookies.wandr_token;
+
+    const handshakeToken = socket.handshake.auth?.token;
+    const token = handshakeToken || cookies.wandr_token;
 
     if (!token) {
       return next(new Error('Not authorized. Please log in.'));
