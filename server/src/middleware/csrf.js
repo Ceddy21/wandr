@@ -7,7 +7,9 @@ const {
 } = doubleCsrf({
   getSecret: () => process.env.CSRF_SECRET || process.env.JWT_SECRET,
   getSessionIdentifier: (req) => {
-    return req.ip || req.headers['x-forwarded-for'] || 'anonymous';
+    const ua = req.headers['user-agent'] || '';
+    const lang = req.headers['accept-language'] || '';
+    return `${ua}|${lang}`;
   },
   cookieName: 'wandr_csrf',
   cookieOptions: {
@@ -15,6 +17,7 @@ const {
     sameSite: process.env.COOKIE_SAME_SITE || 'strict',
     secure: process.env.NODE_ENV === 'production',
     path: '/',
+    maxAge: 60 * 60 * 1000,
   },
   size: 64,
   ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],

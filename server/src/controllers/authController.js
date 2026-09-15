@@ -650,13 +650,30 @@ export const changePassword = async (req, res) => {
 
 export const googleLogin = async (req, res) => {
   try {
-    const googleClient = createGoogleClient();
-
-    const { code } = req.body;
+    const { code, state } = req.body;
 
     if (!code) {
       return res.status(400).json({ message: 'Authorization code is required.' });
     }
+
+    if (!state) {
+      return res.status(400).json({ message: 'OAuth state is required.' });
+    }
+
+    const storedState = req.cookies?.wandr_oauth_state;
+
+    if (!storedState || state !== storedState) {
+      return res.status(403).json({ message: 'Invalid OAuth state.' });
+    }
+
+    res.clearCookie('wandr_oauth_state', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.COOKIE_SAME_SITE || (process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
+      path: '/',
+    });
+
+    const googleClient = createGoogleClient();
 
     const { tokens } = await googleClient.getToken(code);
     const idToken = tokens.id_token;
@@ -760,6 +777,16 @@ export const googleLogin = async (req, res) => {
 
 export const getGoogleAuthUrl = async (req, res) => {
   try {
+    const state = crypto.randomBytes(32).toString('hex');
+
+    res.cookie('wandr_oauth_state', state, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.COOKIE_SAME_SITE || (process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
+      maxAge: 10 * 60 * 1000,
+      path: '/',
+    });
+
     const googleClient = createGoogleClient();
 
     const url = googleClient.generateAuthUrl({
@@ -768,6 +795,7 @@ export const getGoogleAuthUrl = async (req, res) => {
       response_type: 'code',
       redirect_uri: `${process.env.CLIENT_URL || 'http://localhost:5173'}/google-callback`,
       prompt: 'consent',
+      state,
     });
 
     res.json({ url });

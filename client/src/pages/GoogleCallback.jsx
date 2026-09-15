@@ -31,11 +31,23 @@ function GoogleCallback({ theme, toggleTheme }) {
 
     const handleGoogleLogin = async () => {
       try {
+        const csrfRes = await fetch(`${API_BASE_URL}/api/csrf-token`, {
+          method: 'GET',
+          credentials: 'include',
+        });
+        if (!csrfRes.ok) throw new Error('Failed to fetch CSRF token');
+        const { csrfToken } = await csrfRes.json();
+
+        const state = params.get('state');
+
         const response = await fetch(`${API_BASE_URL}/api/auth/google/login`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code }),
           credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken,
+          },
+          body: JSON.stringify({ code, state }),
         });
 
         const data = await response.json();
