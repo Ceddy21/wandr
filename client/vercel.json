@@ -9,7 +9,7 @@
       "destination": "https://wandr-kffe.onrender.com/api/:path*"
     },
     {
-      "source": "/((?!api/|socket.io/).*)",
+      "source": "/((?!api/|socket\\.io).*)",
       "destination": "/index.html"
     }
   ]
