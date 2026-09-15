@@ -13,7 +13,7 @@ export const getSocket = () => {
     console.log('[socketService] Creating new socket connection to', SOCKET_URL);
     socket = io(SOCKET_URL, {
       withCredentials: true,
-      transports: ['websocket', 'polling'],
+      transports: ['polling'],
       autoConnect: true,
     });
 
