@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { X, Loader, Save } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { X, Loader, Save, Search } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export const EditTripModal = ({ isOpen, onClose, trip, onSave }) => {
   const [name, setName] = useState('');
@@ -9,15 +10,114 @@ export const EditTripModal = ({ isOpen, onClose, trip, onSave }) => {
   const [targetMembers, setTargetMembers] = useState(1);
   const [saving, setSaving] = useState(false);
 
+  const [destinationSearch, setDestinationSearch] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const searchTimeout = useRef(null);
+  const dropdownRef = useRef(null);
+
   useEffect(() => {
     if (isOpen && trip) {
       setName(trip.name || '');
       setDestination(trip.destination || '');
+      setDestinationSearch(trip.destination || '');
       setStartDate(trip.startDate ? trip.startDate.slice(0, 10) : '');
       setEndDate(trip.endDate ? trip.endDate.slice(0, 10) : '');
       setTargetMembers(trip.targetMembers || 1);
+      setSuggestions([]);
+      setIsDropdownOpen(false);
     }
   }, [isOpen, trip]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const fetchDestinations = useCallback(async (query) => {
+    if (!query || query.length < 2) {
+      setSuggestions([]);
+      setIsDropdownOpen(false);
+      return;
+    }
+
+    setIsLoadingSuggestions(true);
+    try {
+      const username = import.meta.env.VITE_GEONAMES_USERNAME;
+
+      if (!username) {
+        toast.error('GeoNames username is missing. Please add VITE_GEONAMES_USERNAME to your .env file.');
+        setIsLoadingSuggestions(false);
+        return;
+      }
+
+      const url = `https://secure.geonames.org/searchJSON?country=PH&featureClass=P&name_startsWith=${encodeURIComponent(query)}&maxRows=10&username=${username}`;
+
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`GeoNames API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.status) {
+        throw new Error(data.status.message || 'GeoNames API error');
+      }
+
+      const destinations = data.geonames?.map((item) => {
+        const province = item.adminName1 || '';
+        return province ? `${item.name}, ${province}` : item.name;
+      }) || [];
+
+      setSuggestions(destinations);
+      setIsDropdownOpen(destinations.length > 0);
+    } catch (error) {
+      console.error('GeoNames search error:', error.message);
+      toast.error('Could not load destination suggestions');
+      setSuggestions([]);
+      setIsDropdownOpen(false);
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (searchTimeout.current) {
+      clearTimeout(searchTimeout.current);
+    }
+
+    searchTimeout.current = setTimeout(() => {
+      fetchDestinations(destinationSearch);
+    }, 400);
+
+    return () => {
+      if (searchTimeout.current) {
+        clearTimeout(searchTimeout.current);
+      }
+    };
+  }, [destinationSearch, fetchDestinations, isOpen]);
+
+  const handleSelectDestination = (dest) => {
+    setDestinationSearch(dest);
+    setDestination(dest);
+    setIsDropdownOpen(false);
+    setSuggestions([]);
+  };
+
+  const handleDestinationChange = (e) => {
+    const value = e.target.value;
+    setDestinationSearch(value);
+    setDestination(value);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -80,17 +180,42 @@ export const EditTripModal = ({ isOpen, onClose, trip, onSave }) => {
             />
           </div>
 
-          <div>
+          <div className="relative" ref={dropdownRef}>
             <label className="block text-sm font-medium text-deep-charcoal dark:text-dark-text mb-1.5">
               Destination
             </label>
-            <input
-              type="text"
-              value={destination}
-              onChange={(e) => setDestination(e.target.value)}
-              required
-              className="w-full px-4 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] transition-all"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search for a destination in the Philippines..."
+                value={destinationSearch}
+                onChange={handleDestinationChange}
+                onFocus={() => {
+                  if (suggestions.length > 0) setIsDropdownOpen(true);
+                }}
+                required
+                className="w-full px-4 py-2.5 pr-10 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text placeholder:text-warm-grey/60 dark:placeholder:text-dark-text-secondary/60 focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] transition-all"
+              />
+              {isLoadingSuggestions ? (
+                <Loader className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-terracotta dark:text-dark-terracotta animate-spin" />
+              ) : (
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-grey dark:text-dark-text-secondary" />
+              )}
+            </div>
+
+            {isDropdownOpen && suggestions.length > 0 && (
+              <ul className="absolute z-50 w-full mt-1 bg-white dark:bg-dark-card border border-[#e8eaed] dark:border-dark-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                {suggestions.map((dest, index) => (
+                  <li
+                    key={index}
+                    className="px-4 py-2 hover:bg-terracotta-soft dark:hover:bg-dark-terracotta-soft cursor-pointer transition-colors text-sm text-deep-charcoal dark:text-dark-text"
+                    onClick={() => handleSelectDestination(dest)}
+                  >
+                    {dest}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
