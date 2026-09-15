@@ -1,11 +1,15 @@
 {
   "rewrites": [
     {
+      "source": "/socket.io/:path*",
+      "destination": "https://wandr-kffe.onrender.com/socket.io/:path*"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://wandr-kffe.onrender.com/api/:path*"
     },
     {
-      "source": "/((?!api/).*)",
+      "source": "/((?!api/|socket.io/).*)",
       "destination": "/index.html"
     }
   ]
