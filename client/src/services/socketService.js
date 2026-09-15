@@ -2,11 +2,15 @@ import { io } from 'socket.io-client';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
+console.log('[socketService] Initializing. SOCKET_URL =', SOCKET_URL);
+
 let socket = null;
 const roomCounts = new Map();
 
 export const getSocket = () => {
+  console.log('[socketService] getSocket() called');
   if (!socket) {
+    console.log('[socketService] Creating new socket connection to', SOCKET_URL);
     socket = io(SOCKET_URL, {
       withCredentials: true,
       transports: ['websocket', 'polling'],
@@ -14,11 +18,20 @@ export const getSocket = () => {
     });
 
     socket.on('connect', () => {
+      console.log('[socketService] Connected! socket.id =', socket.id);
       roomCounts.forEach((count, tripId) => {
         if (count > 0) {
           socket.emit('join-trip', tripId);
         }
       });
+    });
+
+    socket.on('connect_error', (err) => {
+      console.error('[socketService] Connect error:', err.message);
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.log('[socketService] Disconnected:', reason);
     });
 
     socket.on('error-trip-access', ({ message }) => {
@@ -29,6 +42,7 @@ export const getSocket = () => {
 };
 
 export const joinTripRoom = (tripId) => {
+  console.log('[socketService] joinTripRoom called with tripId =', tripId);
   if (!tripId) return;
 
   const s = getSocket();
