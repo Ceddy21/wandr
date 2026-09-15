@@ -31,13 +31,6 @@ function GoogleCallback({ theme, toggleTheme }) {
 
     const handleGoogleLogin = async () => {
       try {
-        const csrfRes = await fetch(`${API_BASE_URL}/api/csrf-token`, {
-          method: 'GET',
-          credentials: 'include',
-        });
-        if (!csrfRes.ok) throw new Error('Failed to fetch CSRF token');
-        const { csrfToken } = await csrfRes.json();
-
         const state = params.get('state');
 
         const response = await fetch(`${API_BASE_URL}/api/auth/google/login`, {
@@ -45,7 +38,6 @@ function GoogleCallback({ theme, toggleTheme }) {
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-Token': csrfToken,
           },
           body: JSON.stringify({ code, state }),
         });
@@ -57,7 +49,6 @@ function GoogleCallback({ theme, toggleTheme }) {
         }
 
         sessionStorage.removeItem(guardKey);
-
         localStorage.setItem('user', JSON.stringify(data.user));
         navigate('/dashboard');
       } catch (err) {
