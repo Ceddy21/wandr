@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { Loader } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTrip } from '../hooks/useTrip';
@@ -9,6 +9,7 @@ import { useTripExpenses } from '../hooks/useTripExpenses';
 import { useTripItinerary } from '../hooks/useTripItinerary';
 import { useTripPolls } from '../hooks/useTripPolls';
 import { useTripMessages } from '../hooks/useTripMessages';
+import { getSocket } from '../services/socketService';
 import { TripInfoHeader } from '../components/trip/shared/TripInfoHeader';
 import { TripTabs } from '../components/trip/shared/TripTabs';
 import ChatTab from '../components/trip/ChatTab';
@@ -28,6 +29,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 function TripDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const { user: currentUser } = useUser();
@@ -58,6 +60,32 @@ function TripDetail() {
       setActiveTab(tabFromUrl);
     }
   }, [tabFromUrl]);
+
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+
+    const handleRemovedFromTrip = ({ tripId, tripName }) => {
+      if (tripId !== id) return;
+
+      toast.error(
+        `You have been removed from "${tripName || 'this trip'}"`,
+        { duration: 5000 }
+      );
+
+      if (window.history.length > 1) {
+        navigate(-1);
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
+    };
+
+    socket.on('removed-from-trip', handleRemovedFromTrip);
+
+    return () => {
+      socket.off('removed-from-trip', handleRemovedFromTrip);
+    };
+  }, [id, navigate]);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);

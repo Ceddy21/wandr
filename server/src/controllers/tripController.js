@@ -335,9 +335,15 @@ export const removeMember = async (req, res) => {
     }
 
     const io = req.app.get('io');
-    io?.to(`user:${userId}`).emit('trips-changed', {
-      tripId: trip._id.toString(),
-    });
+    if (io) {
+      io.to(`user:${userId}`).emit('trips-changed', {
+        tripId: trip._id.toString(),
+      });
+      io.to(`user:${userId}`).emit('removed-from-trip', {
+        tripId: trip._id.toString(),
+        tripName: trip.name,
+      });
+    }
     notifyTripChange(io, trip, req.userId);
 
     res.json(trip);
