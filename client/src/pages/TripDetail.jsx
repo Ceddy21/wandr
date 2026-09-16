@@ -9,7 +9,7 @@ import { useTripExpenses } from '../hooks/useTripExpenses';
 import { useTripItinerary } from '../hooks/useTripItinerary';
 import { useTripPolls } from '../hooks/useTripPolls';
 import { useTripMessages } from '../hooks/useTripMessages';
-import { getSocket } from '../services/socketService';
+import { getSocket, connectSocket } from '../services/socketService';
 import { tripService } from '../services/tripService';
 import { TripInfoHeader } from '../components/trip/shared/TripInfoHeader';
 import { TripTabs } from '../components/trip/shared/TripTabs';
@@ -67,30 +67,52 @@ function TripDetail() {
   }, [tabFromUrl]);
 
   useEffect(() => {
-    const socket = getSocket();
-    if (!socket) return;
+    let mounted = true;
+    let socketInstance = null;
 
-    const handleRemovedFromTrip = ({ tripId, tripName }) => {
-      if (tripId !== id) return;
+    const setup = async () => {
+      socketInstance = await connectSocket();
+      if (!mounted || !socketInstance) return;
 
-      toast.error(
-        `You have been removed from "${tripName || 'this trip'}"`,
-        { duration: 5000 }
-      );
+      const handleRemovedFromTrip = ({ tripId, tripName }) => {
+        if (tripId !== id) return;
 
-      if (window.history.length > 1) {
-        navigate(-1);
-      } else {
-        navigate('/dashboard', { replace: true });
-      }
+        toast.error(
+          `You have been removed from "${tripName || 'this trip'}"`,
+          { duration: 5000 }
+        );
+
+        if (window.history.length > 1) {
+          navigate(-1);
+        } else {
+          navigate('/dashboard', { replace: true });
+        }
+      };
+
+      const handleTripsChanged = async ({ tripId }) => {
+        if (tripId !== id) return;
+        try {
+          const updatedTrip = await tripService.getById(id);
+          if (mounted) setTrip(updatedTrip);
+        } catch (err) {
+          console.error('Failed to refresh trip:', err);
+        }
+      };
+
+      socketInstance.on('removed-from-trip', handleRemovedFromTrip);
+      socketInstance.on('trips-changed', handleTripsChanged);
     };
 
-    socket.on('removed-from-trip', handleRemovedFromTrip);
+    setup();
 
     return () => {
-      socket.off('removed-from-trip', handleRemovedFromTrip);
+      mounted = false;
+      if (socketInstance) {
+        socketInstance.off('removed-from-trip');
+        socketInstance.off('trips-changed');
+      }
     };
-  }, [id, navigate]);
+  }, [id, navigate, setTrip]);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
