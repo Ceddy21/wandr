@@ -1,6 +1,17 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, MapPin, Share2, Edit, Trash2, UserPlus, Crown } from 'lucide-react';
+import {
+  ArrowLeft,
+  Calendar,
+  MapPin,
+  Share2,
+  Edit,
+  Trash2,
+  UserPlus,
+  Crown,
+  LogOut,
+  ArrowRightLeft,
+} from 'lucide-react';
 import { MemberAvatar } from './MemberAvatar';
 import { StatusBadge } from './StatusBadge';
 
@@ -11,6 +22,8 @@ export const TripInfoHeader = ({
   onAddMembers,
   onShare,
   onEdit,
+  onLeave,
+  onTransfer,
 }) => {
   const members = Array.isArray(trip?.members) ? trip.members : [];
   const memberCount = members.length;
@@ -19,6 +32,14 @@ export const TripInfoHeader = ({
   const ownerId = trip?.userId?._id || trip?.userId;
   const isOwner =
     currentUserId && ownerId && currentUserId.toString() === ownerId.toString();
+
+  const handleLeaveClick = () => {
+    if (isOwner) {
+      onTransfer?.();
+    } else {
+      onLeave?.();
+    }
+  };
 
   return (
     <>
@@ -62,6 +83,19 @@ export const TripInfoHeader = ({
               <Trash2 className="w-4 h-4 text-red-500" />
             </button>
           )}
+
+          <button
+            onClick={handleLeaveClick}
+            className="p-2 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+            title={isOwner ? 'Transfer ownership to leave' : 'Leave trip'}
+            aria-label={isOwner ? 'Transfer ownership' : 'Leave trip'}
+          >
+            {isOwner ? (
+              <ArrowRightLeft className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            ) : (
+              <LogOut className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            )}
+          </button>
         </div>
       </div>
 

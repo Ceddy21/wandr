@@ -10,6 +10,7 @@ import { useTripItinerary } from '../hooks/useTripItinerary';
 import { useTripPolls } from '../hooks/useTripPolls';
 import { useTripMessages } from '../hooks/useTripMessages';
 import { getSocket } from '../services/socketService';
+import { tripService } from '../services/tripService';
 import { TripInfoHeader } from '../components/trip/shared/TripInfoHeader';
 import { TripTabs } from '../components/trip/shared/TripTabs';
 import ChatTab from '../components/trip/ChatTab';
@@ -23,6 +24,8 @@ import { AddMembersModal } from '../components/trip/modals/AddMembersModal';
 import { DeleteConfirmModal } from '../components/trip/modals/DeleteConfirmModal';
 import { ShareTripModal } from '../components/trip/modals/ShareTripModal';
 import { EditTripModal } from '../components/trip/modals/EditTripModal';
+import { LeaveTripModal } from '../components/trip/modals/LeaveTripModal';
+import { TransferOwnershipModal } from '../components/trip/modals/TransferOwnershipModal';
 
 const VALID_TABS = ['itinerary', 'expenses', 'chat', 'polls', 'members'];
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -54,6 +57,8 @@ function TripDetail() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showEditTrip, setShowEditTrip] = useState(false);
+  const [showLeaveTrip, setShowLeaveTrip] = useState(false);
+  const [showTransferOwnership, setShowTransferOwnership] = useState(false);
 
   useEffect(() => {
     if (tabFromUrl && VALID_TABS.includes(tabFromUrl) && tabFromUrl !== activeTab) {
@@ -110,6 +115,28 @@ function TripDetail() {
     }
   };
 
+  const handleLeaveTrip = async () => {
+    try {
+      await tripService.leaveTrip(id);
+      toast.success('You left the trip.');
+      navigate('/dashboard', { replace: true });
+    } catch (err) {
+      toast.error(err.message || 'Failed to leave trip');
+      throw err;
+    }
+  };
+
+  const handleTransferOwnership = async (newOwnerId) => {
+    try {
+      const updatedTrip = await tripService.transferOwnership(id, newOwnerId);
+      setTrip(updatedTrip);
+      toast.success('Ownership transferred successfully.');
+    } catch (err) {
+      toast.error(err.message || 'Failed to transfer ownership');
+      throw err;
+    }
+  };
+
   const totalExpenses = expensesHook.expenses.reduce(
     (sum, e) => sum + (e.amount || 0),
     0
@@ -148,6 +175,8 @@ function TripDetail() {
         onAddMembers={() => setShowAddMembers(true)}
         onShare={() => setShowShare(true)}
         onEdit={() => setShowEditTrip(true)}
+        onLeave={() => setShowLeaveTrip(true)}
+        onTransfer={() => setShowTransferOwnership(true)}
       />
 
       <TripTabs activeTab={activeTab} setActiveTab={handleTabChange} />
@@ -273,6 +302,21 @@ function TripDetail() {
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={deleteTrip}
         tripName={trip.name || trip.destination}
+      />
+
+      <LeaveTripModal
+        isOpen={showLeaveTrip}
+        onClose={() => setShowLeaveTrip(false)}
+        onConfirm={handleLeaveTrip}
+        tripName={trip.name || trip.destination}
+      />
+
+      <TransferOwnershipModal
+        isOpen={showTransferOwnership}
+        onClose={() => setShowTransferOwnership(false)}
+        onConfirm={handleTransferOwnership}
+        trip={trip}
+        currentUserId={currentUserId}
       />
     </div>
   );

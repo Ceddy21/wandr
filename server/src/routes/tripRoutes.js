@@ -13,6 +13,8 @@ import {
   removeMember,
   joinTripByCode,
   getOrCreateShareCode,
+  leaveTrip,
+  transferOwnership,
 } from '../controllers/tripController.js';
 
 import {
@@ -89,5 +91,8 @@ router.delete('/:id/expenses/:expenseId', protect, deleteExpense);
 
 router.post('/:id/members', protect, addMember);
 router.delete('/:id/members/:userId', protect, removeMember);
+
+router.post('/:id/leave', protect, leaveTrip);
+router.post('/:id/transfer-ownership', protect, transferOwnership);
 
 export default router;

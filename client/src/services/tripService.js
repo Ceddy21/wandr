@@ -367,4 +367,33 @@ export const tripService = {
     }
     return response.json();
   },
+
+  leaveTrip: async (tripId) => {
+    const response = await fetch(`${API_BASE_URL}/api/trips/${tripId}/leave`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || 'Failed to leave trip');
+    }
+    return response.json();
+  },
+
+  transferOwnership: async (tripId, newOwnerId) => {
+    const response = await fetch(
+      `${API_BASE_URL}/api/trips/${tripId}/transfer-ownership`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newOwnerId }),
+        credentials: 'include',
+      }
+    );
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || 'Failed to transfer ownership');
+    }
+    return response.json();
+  },
 };

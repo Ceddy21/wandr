@@ -424,3 +424,123 @@ export const joinTripByCode = async (req, res) => {
     res.status(500).json({ message: 'Failed to join trip' });
   }
 };
+export const leaveTrip = async (req, res) => {
+  try {
+    const trip = await findMemberTrip(req.params.id, req.userId);
+    if (!trip) {
+      return res.status(404).json({ message: 'Trip not found' });
+    }
+
+    const userId = req.userId.toString();
+    const ownerId = trip.userId?.toString();
+
+    if (userId === ownerId) {
+      return res.status(400).json({
+        message: 'As the owner, you must transfer ownership before leaving.',
+      });
+    }
+
+    if (!Array.isArray(trip.members)) trip.members = [];
+
+    const isMember = trip.members.some(
+      (m) => (m._id ? m._id.toString() : m.toString()) === userId
+    );
+
+    if (!isMember) {
+      return res.status(400).json({ message: 'You are not a member of this trip.' });
+    }
+
+    trip.members = trip.members.filter(
+      (m) => (m._id ? m._id.toString() : m.toString()) !== userId
+    );
+
+    await trip.save();
+    await trip.populate('members', 'name email avatar');
+
+    await logTripActivity({
+      userId: req.userId,
+      tripId: trip._id,
+      type: 'member_left',
+      description: 'left the trip',
+      targetId: req.userId,
+      tripName: trip.name,
+    });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user:${userId}`).emit('trips-changed', {
+        tripId: trip._id.toString(),
+      });
+      io.to(`user:${userId}`).emit('removed-from-trip', {
+        tripId: trip._id.toString(),
+        tripName: trip.name,
+      });
+    }
+    notifyTripChange(io, trip, req.userId);
+
+    res.json({ message: 'Left trip successfully.' });
+  } catch (error) {
+    console.error('Leave trip error:', error);
+    res.status(500).json({ message: 'Failed to leave trip' });
+  }
+};
+
+export const transferOwnership = async (req, res) => {
+  try {
+    const { newOwnerId } = req.body;
+
+    if (!newOwnerId || !mongoose.Types.ObjectId.isValid(newOwnerId)) {
+      return res.status(400).json({ message: 'Valid newOwnerId is required.' });
+    }
+
+    const trip = await findOwnedTrip(req.params.id, req.userId);
+    if (!trip) {
+      return res.status(404).json({
+        message: 'Trip not found or you are not the owner.',
+      });
+    }
+
+    const currentOwnerId = req.userId.toString();
+    const newOwnerIdStr = newOwnerId.toString();
+
+    if (currentOwnerId === newOwnerIdStr) {
+      return res.status(400).json({
+        message: 'You are already the owner.',
+      });
+    }
+
+    if (!Array.isArray(trip.members)) trip.members = [];
+
+    const isMember = trip.members.some(
+      (m) => (m._id ? m._id.toString() : m.toString()) === newOwnerIdStr
+    );
+
+    if (!isMember) {
+      return res.status(400).json({
+        message: 'The new owner must be a member of this trip.',
+      });
+    }
+
+    trip.userId = newOwnerId;
+    await trip.save();
+    await trip.populate('members', 'name email avatar');
+
+    const newOwner = await User.findById(newOwnerId).select('name');
+
+    await logTripActivity({
+      userId: req.userId,
+      tripId: trip._id,
+      type: 'ownership_transferred',
+      description: `transferred ownership to ${newOwner?.name || 'a member'}`,
+      targetId: newOwnerId,
+      tripName: trip.name,
+    });
+
+    notifyTripChange(req.app.get('io'), trip, null);
+
+    res.json(trip);
+  } catch (error) {
+    console.error('Transfer ownership error:', error);
+    res.status(500).json({ message: 'Failed to transfer ownership' });
+  }
+};
