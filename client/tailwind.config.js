@@ -7,6 +7,9 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      screens: {
+        xs: '400px',
+      },
       colors: {
         'warm-white': '#f7f7f5',
         'off-white': '#f0f0eb',
@@ -48,7 +51,6 @@ export default {
           '&::-webkit-scrollbar-thumb:hover': {
             backgroundColor: 'rgba(196, 106, 77, 0.55)',
           },
-          // Firefox
           scrollbarWidth: 'thin',
           scrollbarColor: 'transparent transparent',
           '&:hover': {

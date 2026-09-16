@@ -145,24 +145,25 @@ function Dashboard() {
   if (error) return <DashboardError error={error} />;
 
   const btnBase =
-    'inline-flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 h-9 sm:h-10 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0';
+    'inline-flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 h-9 sm:h-10 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap flex-1 sm:flex-initial';
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 lg:px-20 py-8 sm:py-12">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 md:px-10 lg:px-20 py-6 sm:py-12">
       <Toaster position="top-right" />
 
       <WelcomeBanner userName={userName} total={stats.total} upcoming={stats.upcoming} />
       <TripStats stats={stats} />
       <NextTrip trip={nextTrip} />
 
-      <div className="flex items-center gap-2 sm:gap-3 mb-6">
+      <div className="flex items-center gap-1.5 sm:gap-3 mb-6">
         <button
           type="button"
           onClick={handleCreateTrip}
           className={`${btnBase} bg-terracotta dark:bg-dark-terracotta text-white hover:bg-terracotta-hover dark:hover:bg-[#c47050] shadow-lg shadow-terracotta/20 dark:shadow-dark-terracotta/20`}
         >
-          <Plus className="w-4 h-4" />
-          New Trip
+          <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="hidden xs:inline">New Trip</span>
+          <span className="xs:hidden">New</span>
         </button>
 
         <button
@@ -170,8 +171,9 @@ function Dashboard() {
           onClick={() => navigate('/calendar')}
           className={`${btnBase} border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text hover:border-terracotta dark:hover:border-dark-terracotta hover:text-terracotta dark:hover:text-dark-terracotta`}
         >
-          <Calendar className="w-4 h-4" />
-          View Calendar
+          <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="hidden xs:inline">View Calendar</span>
+          <span className="xs:hidden">Calendar</span>
         </button>
 
         <button
@@ -179,8 +181,9 @@ function Dashboard() {
           onClick={() => setIsJoinModalOpen(true)}
           className={`${btnBase} border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text hover:border-terracotta dark:hover:border-dark-terracotta hover:text-terracotta dark:hover:text-dark-terracotta`}
         >
-          <UserPlus className="w-4 h-4" />
-          Join with Code
+          <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="hidden xs:inline">Join with Code</span>
+          <span className="xs:hidden">Join</span>
         </button>
       </div>
 
