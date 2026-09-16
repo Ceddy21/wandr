@@ -78,6 +78,26 @@ export const useTrips = () => {
 
   useEffect(() => {
     fetchTrips();
+
+    const handlePageShow = (event) => {
+      if (event.persisted) {
+        fetchTrips();
+      }
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchTrips();
+      }
+    };
+
+    window.addEventListener('pageshow', handlePageShow);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('pageshow', handlePageShow);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, []);
 
   useEffect(() => {
