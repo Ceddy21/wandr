@@ -47,8 +47,8 @@ function Archive() {
 
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-deep-charcoal dark:text-dark-text flex items-center gap-2">
-            <ArchiveIcon className="w-7 h-7 text-terracotta dark:text-dark-terracotta" />
+          <h1 className="text-xl sm:text-3xl font-serif font-bold text-deep-charcoal dark:text-dark-text flex items-center gap-2">
+            <ArchiveIcon className="w-5 h-5 sm:w-7 sm:h-7 text-terracotta dark:text-dark-terracotta" />
             Archived Trips
           </h1>
           <p className="text-sm text-warm-grey dark:text-dark-text-secondary mt-1">

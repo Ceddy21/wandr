@@ -101,7 +101,7 @@ export const TripInfoHeader = ({
 
       <div className="bg-white dark:bg-dark-card border border-[#e8eaed] dark:border-dark-border rounded-xl p-4 sm:p-6 mb-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <h1 className="text-2xl sm:text-3xl font-serif font-bold text-deep-charcoal dark:text-dark-text">
                 {trip.name || trip.destination}
@@ -120,12 +120,12 @@ export const TripInfoHeader = ({
               )}
             </div>
             <p className="text-sm text-warm-grey dark:text-dark-text-secondary flex items-center gap-2">
-              <MapPin className="w-4 h-4" />
-              {trip.destination}
+              <MapPin className="w-4 h-4 flex-shrink-0" />
+              <span className="truncate">{trip.destination}</span>
             </p>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-warm-grey dark:text-dark-text-secondary mt-1">
               <span className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
+                <Calendar className="w-4 h-4 flex-shrink-0" />
                 {new Date(trip.startDate).toLocaleDateString('en-US', {
                   month: 'short',
                   day: 'numeric',
@@ -141,8 +141,9 @@ export const TripInfoHeader = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex -space-x-2">
+          {/* Members + Add button row — Add pushed to the right */}
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="flex -space-x-2 flex-shrink-0">
               {members.slice(0, 5).map((member) => (
                 <MemberAvatar key={member._id} member={member} />
               ))}
@@ -154,12 +155,14 @@ export const TripInfoHeader = ({
                 </div>
               )}
             </div>
-            <span className="text-sm text-warm-grey dark:text-dark-text-secondary">
+
+            <span className="text-sm text-warm-grey dark:text-dark-text-secondary whitespace-nowrap flex-shrink-0">
               {memberCount} / {trip.targetMembers || memberCount} members
             </span>
+
             <button
               onClick={onAddMembers}
-              className="flex items-center gap-1 px-3 py-1.5 bg-terracotta dark:bg-dark-terracotta text-white text-sm rounded-lg hover:bg-terracotta-hover dark:hover:bg-[#c47050] transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 bg-terracotta dark:bg-dark-terracotta text-white text-sm rounded-lg hover:bg-terracotta-hover dark:hover:bg-[#c47050] transition-colors flex-shrink-0 ml-auto md:ml-0"
             >
               <UserPlus className="w-4 h-4" />
               Add

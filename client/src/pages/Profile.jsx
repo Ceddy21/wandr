@@ -31,7 +31,7 @@ function Profile() {
         const { user: u } = await authService.getMe();
         if (cancelled) return;
         setUser(u);
-        syncUser(u);       
+        syncUser(u);
       } catch (err) {
         toast.error(err.message || 'Failed to load profile');
       } finally {
@@ -44,7 +44,7 @@ function Profile() {
 
   const handleUserChange = (updatedUser) => {
     setUser(updatedUser);
-    syncUser(updatedUser);   
+    syncUser(updatedUser);
   };
 
   const handleAvatarUpload = async (file) => {
@@ -125,28 +125,32 @@ function Profile() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-10 lg:px-20 py-8 sm:py-12">
-      <Link
-        to="/dashboard"
-        className="inline-flex items-center gap-2 text-sm text-warm-grey dark:text-dark-text-secondary hover:text-terracotta dark:hover:text-dark-terracotta transition-colors mb-6"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Dashboard
-      </Link>
-
-      <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-serif font-bold text-deep-charcoal dark:text-dark-text">
-          Profile Settings
-        </h1>
-        <p className="text-sm text-warm-grey dark:text-dark-text-secondary mt-1">
-          Manage your account settings and preferences
-        </p>
+      {/* Header: Title left, Back link right */}
+      <div className="flex items-start justify-between gap-3 mb-6">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-3xl font-serif font-bold text-deep-charcoal dark:text-dark-text">
+            Profile Settings
+          </h1>
+          <p className="text-xs sm:text-sm text-warm-grey dark:text-dark-text-secondary mt-1">
+            Manage your account settings and preferences
+          </p>
+        </div>
+        <Link
+          to="/dashboard"
+          className="text-xs sm:text-sm text-terracotta dark:text-dark-terracotta hover:underline flex items-center gap-1 flex-shrink-0 whitespace-nowrap pt-1"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="hidden sm:inline">Back to Dashboard</span>
+          <span className="sm:hidden">Back</span>
+        </Link>
       </div>
 
       <div className="bg-white dark:bg-dark-card border border-[#e8eaed] dark:border-dark-border rounded-xl overflow-hidden shadow-sm">
-        <div className="p-6 sm:p-8 border-b border-[#e8eaed] dark:border-dark-border">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-            <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-terracotta-soft dark:bg-dark-terracotta-soft flex items-center justify-center overflow-hidden border-4 border-terracotta-soft dark:border-dark-terracotta-soft">
+        {/* Avatar + user info row */}
+        <div className="p-5 sm:p-8 border-b border-[#e8eaed] dark:border-dark-border">
+          <div className="flex items-center gap-4 sm:gap-6">
+            <div className="relative flex-shrink-0">
+              <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-terracotta-soft dark:bg-dark-terracotta-soft flex items-center justify-center overflow-hidden border-4 border-terracotta-soft dark:border-dark-terracotta-soft">
                 {user.avatar ? (
                   <img
                     src={user.avatar}
@@ -154,14 +158,14 @@ function Profile() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <User className="w-12 h-12 text-terracotta dark:text-dark-terracotta" />
+                  <User className="w-8 h-8 sm:w-12 sm:h-12 text-terracotta dark:text-dark-terracotta" />
                 )}
               </div>
-              <label className="absolute bottom-0 right-0 p-1.5 rounded-full bg-terracotta dark:bg-dark-terracotta text-white hover:bg-terracotta-hover dark:hover:bg-[#c47050] transition-colors cursor-pointer">
+              <label className="absolute bottom-0 right-0 p-1 sm:p-1.5 rounded-full bg-terracotta dark:bg-dark-terracotta text-white hover:bg-terracotta-hover dark:hover:bg-[#c47050] transition-colors cursor-pointer border-2 border-white dark:border-dark-card">
                 {uploadingAvatar ? (
-                  <Loader className="w-4 h-4 animate-spin" />
+                  <Loader className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
                 ) : (
-                  <Camera className="w-4 h-4" />
+                  <Camera className="w-3 h-3 sm:w-4 sm:h-4" />
                 )}
                 <input
                   type="file"
@@ -177,16 +181,16 @@ function Profile() {
               </label>
             </div>
 
-            <div className="flex-1">
-              <h2 className="text-xl font-semibold text-deep-charcoal dark:text-dark-text">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-base sm:text-xl font-semibold text-deep-charcoal dark:text-dark-text truncate">
                 {user.name || 'Unnamed User'}
               </h2>
-              <p className="text-sm text-warm-grey dark:text-dark-text-secondary flex items-center gap-1">
-                <Mail className="w-4 h-4" />
-                {user.email}
+              <p className="text-xs sm:text-sm text-warm-grey dark:text-dark-text-secondary flex items-center gap-1 mt-0.5 truncate">
+                <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                <span className="truncate">{user.email}</span>
               </p>
               {memberSince && (
-                <p className="text-xs text-warm-grey dark:text-dark-text-secondary mt-1">
+                <p className="text-[11px] sm:text-xs text-warm-grey dark:text-dark-text-secondary mt-1">
                   Member since {memberSince}
                 </p>
               )}
@@ -194,7 +198,8 @@ function Profile() {
           </div>
         </div>
 
-        <div className="flex border-b border-[#e8eaed] dark:border-dark-border px-6">
+        {/* Tabs */}
+        <div className="flex border-b border-[#e8eaed] dark:border-dark-border px-2 sm:px-6 overflow-x-auto">
           {[
             { id: 'profile',  label: 'Profile',        icon: User },
             { id: 'password', label: 'Password',       icon: Key },
@@ -205,13 +210,13 @@ function Profile() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${
                   activeTab === tab.id
                     ? 'border-terracotta text-terracotta dark:border-dark-terracotta dark:text-dark-terracotta'
                     : 'border-transparent text-warm-grey dark:text-dark-text-secondary hover:text-deep-charcoal dark:hover:text-dark-text'
                 }`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
                 {tab.label}
               </button>
             );
@@ -229,7 +234,7 @@ function Profile() {
             <DeleteAccount
               isGoogleUser={user.isGoogleUser}
               onDeleted={() => {
-                syncUser(null);           
+                syncUser(null);
                 navigate('/login');
               }}
             />

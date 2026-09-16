@@ -13,6 +13,7 @@ import {
   X,
   Loader,
   KeyRound,
+  ArrowLeft,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import CreateTripModal from '../components/ui/CreateTripModal';
@@ -221,57 +222,65 @@ function TripList() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 lg:px-20 py-8 sm:py-12">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-deep-charcoal dark:text-dark-text">
+      {/* Row 1: Title + count (left) | Back to Dashboard (right) */}
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-3xl font-serif font-bold text-deep-charcoal dark:text-dark-text">
             All Trips
           </h1>
-          <p className="text-sm text-warm-grey dark:text-dark-text-secondary mt-1">
+          <p className="text-xs sm:text-sm text-warm-grey dark:text-dark-text-secondary mt-0.5">
             {sortedTrips.length} trip{sortedTrips.length !== 1 ? 's' : ''} found
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => setIsJoinModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-dark-card border border-[#e8eaed] dark:border-dark-border text-deep-charcoal dark:text-dark-text text-sm font-medium rounded-lg hover:border-terracotta dark:hover:border-dark-terracotta hover:text-terracotta dark:hover:text-dark-terracotta transition-all duration-200"
-          >
-            <UserPlus className="w-4 h-4" />
-            Join with Code
-          </button>
-          <button
-            onClick={handleCreateTrip}
-            className="flex items-center gap-2 px-4 py-2 bg-terracotta dark:bg-dark-terracotta text-white text-sm font-medium rounded-lg hover:bg-terracotta-hover dark:hover:bg-[#c47050] transition-all duration-300 hover:scale-105 shadow-lg shadow-terracotta/20 dark:shadow-dark-terracotta/20"
-          >
-            <Plus className="w-4 h-4" />
-            New Trip
-          </button>
-          <Link
-            to="/dashboard"
-            className="text-sm text-terracotta dark:text-dark-terracotta hover:underline flex items-center gap-1"
-          >
-            ← Back to Dashboard
-          </Link>
-        </div>
+
+        <Link
+          to="/dashboard"
+          className="text-xs sm:text-sm text-terracotta dark:text-dark-terracotta hover:underline flex items-center gap-1 flex-shrink-0 whitespace-nowrap"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="hidden sm:inline">Back to Dashboard</span>
+          <span className="sm:hidden">Back</span>
+        </Link>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-grey dark:text-dark-text-secondary" />
-          <input
-            type="text"
-            placeholder="Search trips by name or destination..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-2.5 pl-10 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text placeholder:text-warm-grey/60 dark:placeholder:text-dark-text-secondary/60 focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] focus:border-transparent transition-all duration-200"
-          />
-        </div>
+      {/* Row 2: Join with Code + New Trip — right aligned */}
+      <div className="flex items-center justify-end gap-2 sm:gap-3 mb-5">
+        <button
+          onClick={() => setIsJoinModalOpen(true)}
+          className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-white dark:bg-dark-card border border-[#e8eaed] dark:border-dark-border text-deep-charcoal dark:text-dark-text text-xs sm:text-sm font-medium rounded-lg hover:border-terracotta dark:hover:border-dark-terracotta hover:text-terracotta dark:hover:text-dark-terracotta transition-all duration-200 whitespace-nowrap"
+        >
+          <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          Join with Code
+        </button>
+        <button
+          onClick={handleCreateTrip}
+          className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-terracotta dark:bg-dark-terracotta text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-terracotta-hover dark:hover:bg-[#c47050] transition-all duration-300 hover:scale-105 shadow-lg shadow-terracotta/20 dark:shadow-dark-terracotta/20 whitespace-nowrap"
+        >
+          <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          New Trip
+        </button>
+      </div>
 
-        <div className="relative">
-          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-grey dark:text-dark-text-secondary" />
+      {/* Row 3: Search bar — full width */}
+      <div className="relative w-full mb-3">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-grey dark:text-dark-text-secondary" />
+        <input
+          type="text"
+          placeholder="Search trips by name or destination..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-2.5 pl-10 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text placeholder:text-warm-grey/60 dark:placeholder:text-dark-text-secondary/60 focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] focus:border-transparent transition-all duration-200"
+        />
+      </div>
+
+      {/* Row 4: Filter + Sort — one line */}
+      <div className="flex items-center gap-2 sm:gap-3 mb-6">
+        <div className="relative flex-1 sm:flex-initial min-w-0">
+          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-grey dark:text-dark-text-secondary pointer-events-none" />
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="pl-10 pr-8 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] transition-all duration-200 appearance-none"
+            className="w-full sm:w-auto pl-10 pr-8 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text text-sm focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] transition-all duration-200 appearance-none"
           >
             <option value="all">All Trips</option>
             <option value="upcoming">Upcoming</option>
@@ -280,12 +289,12 @@ function TripList() {
           </select>
         </div>
 
-        <div className="relative">
-          <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-grey dark:text-dark-text-secondary" />
+        <div className="relative flex-1 sm:flex-initial min-w-0">
+          <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-grey dark:text-dark-text-secondary pointer-events-none" />
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="pl-10 pr-8 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] transition-all duration-200 appearance-none"
+            className="w-full sm:w-auto pl-10 pr-8 py-2.5 rounded-lg border border-[#e8eaed] dark:border-dark-border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text text-sm focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] dark:focus:ring-[#E76F51] transition-all duration-200 appearance-none"
           >
             <option value="date">Sort by Date</option>
             <option value="destination">Sort by Destination</option>

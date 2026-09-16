@@ -98,8 +98,8 @@ function RecentActivity() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-10 lg:px-20 py-8 sm:py-12">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-deep-charcoal dark:text-dark-text flex items-center gap-2">
-            <Activity className="w-7 h-7 text-terracotta dark:text-dark-terracotta" />
+          <h1 className="text-xl sm:text-3xl font-serif font-bold text-deep-charcoal dark:text-dark-text flex items-center gap-2">
+            <Activity className="w-5 h-5 sm:w-7 sm:h-7 text-terracotta dark:text-dark-terracotta" />
             Recent Activity
           </h1>
           <p className="text-sm text-warm-grey dark:text-dark-text-secondary mt-1">

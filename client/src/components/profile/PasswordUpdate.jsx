@@ -1,8 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Loader, Eye, EyeOff } from 'lucide-react';
+import { Loader, Eye, EyeOff, Check, X } from 'lucide-react';
 import { authService } from '../../services/authService';
+
+const PASSWORD_RULES = [
+  { key: 'length',  label: 'At least 8 characters',  test: (p) => p.length >= 8 },
+  { key: 'lower',   label: 'One lowercase letter',   test: (p) => /[a-z]/.test(p) },
+  { key: 'upper',   label: 'One uppercase letter',   test: (p) => /[A-Z]/.test(p) },
+  { key: 'number',  label: 'One number',             test: (p) => /\d/.test(p) },
+  {
+    key: 'special',
+    label: 'One special character (!@#$%^&*_...)',
+    test: (p) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?`~]/.test(p),
+  },
+];
 
 const PasswordUpdate = ({ isGoogleUser }) => {
   const navigate = useNavigate();
@@ -18,6 +30,18 @@ const PasswordUpdate = ({ isGoogleUser }) => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [confirmError, setConfirmError] = useState('');
+  const [touchedNew, setTouchedNew] = useState(false);
+
+  const passwordChecks = useMemo(
+    () =>
+      PASSWORD_RULES.map((rule) => ({
+        ...rule,
+        passed: rule.test(newPassword),
+      })),
+    [newPassword]
+  );
+
+  const allPassed = passwordChecks.every((c) => c.passed);
 
   if (isGoogleUser) {
     return (
@@ -37,13 +61,13 @@ const PasswordUpdate = ({ isGoogleUser }) => {
     setError('');
     setConfirmError('');
 
-    // ─── Client-side validation ───────────────────────────
     if (!currentPassword || !newPassword || !confirmPassword) {
       setError('Please fill in all fields.');
       return;
     }
-    if (newPassword.length < 8) {
-      setError('New password must be at least 8 characters.');
+    if (!allPassed) {
+      setError('Please meet all password requirements.');
+      setTouchedNew(true);
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -55,19 +79,16 @@ const PasswordUpdate = ({ isGoogleUser }) => {
     try {
       await authService.changePassword({ currentPassword, newPassword });
 
-      // ─── Success: clear session and force re-login ─────
       toast.success('Password updated. Please log in again.', {
         duration: 2500,
       });
 
       localStorage.removeItem('user');
 
-      // Small delay so the toast is visible before redirect
       setTimeout(() => {
         navigate('/login?reason=session_expired', { replace: true });
       }, 800);
     } catch (err) {
-      // ─── Error: stay on page, show inline error ────────
       const msg = err.message || 'Failed to change password';
 
       if (msg.toLowerCase().includes('current password')) {
@@ -81,7 +102,6 @@ const PasswordUpdate = ({ isGoogleUser }) => {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-md space-y-4">
-
       {error && (
         <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
           <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
@@ -133,6 +153,7 @@ const PasswordUpdate = ({ isGoogleUser }) => {
               if (error) setError('');
               if (confirmError) setConfirmError('');
             }}
+            onFocus={() => setTouchedNew(true)}
             autoComplete="new-password"
             className={`w-full px-4 py-2.5 pr-12 rounded-lg border bg-white dark:bg-dark-card text-deep-charcoal dark:text-dark-text focus:outline-none focus:ring-2 transition-all ${
               error
@@ -149,9 +170,36 @@ const PasswordUpdate = ({ isGoogleUser }) => {
             {showNew ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
           </button>
         </div>
-        <p className="text-xs text-warm-grey dark:text-dark-text-secondary mt-1">
-          At least 8 characters, with uppercase, lowercase, number, and special character.
-        </p>
+
+        {/* Progressive password rules */}
+        {touchedNew && newPassword.length > 0 && (
+          <ul className="mt-2.5 space-y-1.5">
+            {passwordChecks.map((check) => (
+              <li
+                key={check.key}
+                className="flex items-center gap-1.5 text-xs"
+                style={{
+                  color: check.passed ? '#16a34a' : undefined,
+                }}
+              >
+                {check.passed ? (
+                  <Check className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
+                ) : (
+                  <X className="w-3.5 h-3.5 text-warm-grey dark:text-dark-text-secondary flex-shrink-0 opacity-60" />
+                )}
+                <span
+                  className={
+                    check.passed
+                      ? 'text-green-600'
+                      : 'text-warm-grey dark:text-dark-text-secondary'
+                  }
+                >
+                  {check.label}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* Confirm New Password */}
@@ -193,7 +241,7 @@ const PasswordUpdate = ({ isGoogleUser }) => {
 
       <button
         type="submit"
-        disabled={saving}
+        disabled={saving || !allPassed || mismatch}
         className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-terracotta dark:bg-dark-terracotta text-white font-medium hover:bg-terracotta-hover dark:hover:bg-[#c47050] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {saving && <Loader className="w-4 h-4 animate-spin" />}
