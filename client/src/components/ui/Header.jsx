@@ -16,17 +16,12 @@ import NotificationBell from './NotificationBell';
 
 const LOGO_URL = 'https://res.cloudinary.com/sqlrnnth/image/upload/w_320,h_320,c_fit,q_auto,f_auto/v1789228245/wandr_nologo.png';
 
-const LOGO_SIZE = {
-  mobile: 64,
-  tablet: 72,
-  desktop: 80,
-};
-
-const TEXT_SIZE = {
-  mobile: 'text-2xl',
-  tablet: 'text-3xl',
-  desktop: 'text-3xl',
-};
+const NAV_LINKS = [
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/trips',     label: 'Trips',     icon: Compass },
+  { href: '/activity',  label: 'Activity',  icon: Activity },
+  { href: '/archive',   label: 'Archive',   icon: Archive },
+];
 
 function Header({ theme, toggleTheme }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -90,9 +85,9 @@ function Header({ theme, toggleTheme }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const toggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
-  };
+  const toggleDropdown = () => setIsDropdownOpen((prev) => !prev);
+
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -102,28 +97,21 @@ function Header({ theme, toggleTheme }) {
         method: 'POST',
         credentials: 'include',
       });
-
-      localStorage.removeItem('user');
-      localStorage.removeItem('pendingVerificationEmail');
-
-      setUser(null);
-      setIsDropdownOpen(false);
-
-      navigate('/login');
     } catch (error) {
       console.error('Logout error:', error);
+    } finally {
       localStorage.removeItem('user');
       localStorage.removeItem('pendingVerificationEmail');
       setUser(null);
+      setIsDropdownOpen(false);
       navigate('/login');
-    } finally {
       setIsLoggingOut(false);
     }
   };
 
   const getUserInitials = () => {
     if (user?.name) {
-      const names = user.name.split(' ');
+      const names = user.name.trim().split(' ').filter(Boolean);
       if (names.length >= 2) {
         return `${names[0].charAt(0)}${names[1].charAt(0)}`.toUpperCase();
       }
@@ -134,61 +122,36 @@ function Header({ theme, toggleTheme }) {
 
   return (
     <nav className="bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border-b border-[#e8eaed] dark:border-dark-border px-4 sm:px-6 md:px-10 lg:px-20 py-3 sm:py-4 sticky top-0 z-50 transition-colors duration-300">
-      <div className="flex items-center justify-between max-w-7xl mx-auto">
+      <div className="flex items-center justify-between gap-3 max-w-7xl mx-auto">
+
         <a
           href="/dashboard"
-          className="flex items-center gap-3 group hover:opacity-90 transition-opacity duration-200"
+          className="flex items-center gap-2 sm:gap-3 group hover:opacity-90 transition-opacity duration-200 flex-shrink-0 min-w-0"
         >
           <img
             src={LOGO_URL}
             alt="Wandr logo"
-            width={LOGO_SIZE.desktop}
-            height={LOGO_SIZE.desktop}
-            style={{
-              height: 'clamp(48px, 5vw, 64px)',
-              width: 'auto',
-            }}
-            className="object-contain"
+            className="object-contain flex-shrink-0 h-10 sm:h-12 md:h-14 w-auto"
           />
-          <span
-            className={`font-serif font-bold text-[#1A1A1A] dark:text-dark-text group-hover:text-[#2D6A4F] dark:group-hover:text-[#E76F51] transition-colors duration-300 tracking-tight ${TEXT_SIZE.desktop}`}
-          >
+          <span className="font-serif font-bold text-[#1A1A1A] dark:text-dark-text group-hover:text-[#2D6A4F] dark:group-hover:text-[#E76F51] transition-colors duration-300 tracking-tight text-xl sm:text-2xl md:text-3xl truncate">
             Wandr
           </span>
         </a>
 
-        <div className="hidden md:flex items-center gap-1">
-          <a
-            href="/dashboard"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-[#4A4A4A] dark:text-dark-text-secondary hover:text-[#2D6A4F] dark:hover:text-[#E76F51] hover:bg-[#F0F2F5] dark:hover:bg-dark-card/50 transition-all duration-200"
-          >
-            <LayoutDashboard className="w-4 h-4" />
-            Dashboard
-          </a>
-          <a
-            href="/trips"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-[#4A4A4A] dark:text-dark-text-secondary hover:text-[#2D6A4F] dark:hover:text-[#E76F51] hover:bg-[#F0F2F5] dark:hover:bg-dark-card/50 transition-all duration-200"
-          >
-            <Compass className="w-4 h-4" />
-            Trips
-          </a>
-          <a
-            href="/activity"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-[#4A4A4A] dark:text-dark-text-secondary hover:text-[#2D6A4F] dark:hover:text-[#E76F51] hover:bg-[#F0F2F5] dark:hover:bg-dark-card/50 transition-all duration-200"
-          >
-            <Activity className="w-4 h-4" />
-            Activity
-          </a>
-          <a
-            href="/archive"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-[#4A4A4A] dark:text-dark-text-secondary hover:text-[#2D6A4F] dark:hover:text-[#E76F51] hover:bg-[#F0F2F5] dark:hover:bg-dark-card/50 transition-all duration-200"
-          >
-            <Archive className="w-4 h-4" />
-            Archive
-          </a>
+        <div className="hidden md:flex items-center gap-1 flex-shrink-0">
+          {NAV_LINKS.map(({ href, label, icon: Icon }) => (
+            <a
+              key={href}
+              href={href}
+              className="flex items-center gap-2 px-3 lg:px-4 py-2 rounded-lg text-sm font-medium text-[#4A4A4A] dark:text-dark-text-secondary hover:text-[#2D6A4F] dark:hover:text-[#E76F51] hover:bg-[#F0F2F5] dark:hover:bg-dark-card/50 transition-all duration-200"
+            >
+              <Icon className="w-4 h-4" />
+              {label}
+            </a>
+          ))}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-shrink-0">
           <NotificationBell />
 
           <div className="relative" ref={dropdownRef}>
@@ -238,19 +201,18 @@ function Header({ theme, toggleTheme }) {
           >
             {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
-        </div>
 
-        <div className="flex md:hidden items-center gap-2">
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-lg bg-[#F0F2F5] dark:bg-dark-card/50 text-[#4A4A4A] dark:text-dark-text-secondary hover:bg-[#E8EAED] dark:hover:bg-dark-card transition-all duration-200"
+            className="flex md:hidden p-2 rounded-lg bg-[#F0F2F5] dark:bg-dark-card/50 text-[#4A4A4A] dark:text-dark-text-secondary hover:bg-[#E8EAED] dark:hover:bg-dark-card transition-all duration-200"
             aria-label="Toggle Theme"
           >
             {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
+
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 rounded-lg bg-[#F0F2F5] dark:bg-dark-card/50 text-[#1A1A1A] dark:text-dark-text hover:bg-[#E8EAED] dark:hover:bg-dark-card transition-all duration-200"
+            className="flex md:hidden p-2 rounded-lg bg-[#F0F2F5] dark:bg-dark-card/50 text-[#1A1A1A] dark:text-dark-text hover:bg-[#E8EAED] dark:hover:bg-dark-card transition-all duration-200"
             aria-label="Toggle Menu"
           >
             {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -260,42 +222,21 @@ function Header({ theme, toggleTheme }) {
 
       {isMobileMenuOpen && (
         <div className="md:hidden mt-3 pt-3 border-t border-[#e8eaed] dark:border-dark-border animate-in slide-in-from-top-2 duration-200">
-          <a
-            href="/dashboard"
-            className="flex items-center gap-3 py-3 px-2 text-sm font-medium text-[#4A4A4A] dark:text-dark-text-secondary hover:text-[#2D6A4F] dark:hover:text-[#E76F51] hover:bg-[#F0F2F5] dark:hover:bg-dark-card/50 rounded-lg transition-all duration-150"
-            onClick={() => setIsMobileMenuOpen(false)}
-          >
-            <LayoutDashboard className="w-4 h-4" />
-            Dashboard
-          </a>
-          <a
-            href="/trips"
-            className="flex items-center gap-3 py-3 px-2 text-sm font-medium text-[#4A4A4A] dark:text-dark-text-secondary hover:text-[#2D6A4F] dark:hover:text-[#E76F51] hover:bg-[#F0F2F5] dark:hover:bg-dark-card/50 rounded-lg transition-all duration-150"
-            onClick={() => setIsMobileMenuOpen(false)}
-          >
-            <Compass className="w-4 h-4" />
-            Trips
-          </a>
-          <a
-            href="/activity"
-            className="flex items-center gap-3 py-3 px-2 text-sm font-medium text-[#4A4A4A] dark:text-dark-text-secondary hover:text-[#2D6A4F] dark:hover:text-[#E76F51] hover:bg-[#F0F2F5] dark:hover:bg-dark-card/50 rounded-lg transition-all duration-150"
-            onClick={() => setIsMobileMenuOpen(false)}
-          >
-            <Activity className="w-4 h-4" />
-            Activity
-          </a>
-          <a
-            href="/archive"
-            className="flex items-center gap-3 py-3 px-2 text-sm font-medium text-[#4A4A4A] dark:text-dark-text-secondary hover:text-[#2D6A4F] dark:hover:text-[#E76F51] hover:bg-[#F0F2F5] dark:hover:bg-dark-card/50 rounded-lg transition-all duration-150"
-            onClick={() => setIsMobileMenuOpen(false)}
-          >
-            <Archive className="w-4 h-4" />
-            Archive
-          </a>
+          {NAV_LINKS.map(({ href, label, icon: Icon }) => (
+            <a
+              key={href}
+              href={href}
+              onClick={closeMobileMenu}
+              className="flex items-center gap-3 py-3 px-2 text-sm font-medium text-[#4A4A4A] dark:text-dark-text-secondary hover:text-[#2D6A4F] dark:hover:text-[#E76F51] hover:bg-[#F0F2F5] dark:hover:bg-dark-card/50 rounded-lg transition-all duration-150"
+            >
+              <Icon className="w-4 h-4" />
+              {label}
+            </a>
+          ))}
           <a
             href="/profile"
+            onClick={closeMobileMenu}
             className="flex items-center gap-3 py-3 px-2 text-sm font-medium text-[#4A4A4A] dark:text-dark-text-secondary hover:text-[#2D6A4F] dark:hover:text-[#E76F51] hover:bg-[#F0F2F5] dark:hover:bg-dark-card/50 rounded-lg transition-all duration-150"
-            onClick={() => setIsMobileMenuOpen(false)}
           >
             <User className="w-4 h-4" />
             Profile
