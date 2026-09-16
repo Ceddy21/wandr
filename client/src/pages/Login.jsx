@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Plane, Eye, EyeOff, Hand, Sun, Moon } from 'lucide-react';
+import { Eye, EyeOff, Hand, Sun, Moon } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import ForgotPasswordModal from '../components/trip/modals/ForgotPasswordModal';
+
+const LOGO_URL = 'https://res.cloudinary.com/sqlrnnth/image/upload/v1789548455/wanderly/receipts/tmlegop3qewoeiaskjur.png';
 
 function Login({ theme, toggleTheme }) {
   const [showPassword, setShowPassword] = useState(false);
@@ -72,7 +74,7 @@ function Login({ theme, toggleTheme }) {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center px-4 transition-colors duration-300 overflow-hidden">
+    <div className="relative min-h-screen flex items-center justify-center px-4 py-8 transition-colors duration-300 overflow-hidden">
 
       <div
         className="absolute inset-0 pointer-events-none"
@@ -127,7 +129,7 @@ function Login({ theme, toggleTheme }) {
       </button>
 
       <div
-        className="w-full max-w-md rounded-2xl p-8 relative overflow-hidden z-10"
+        className="w-full max-w-md rounded-2xl p-6 sm:p-8 relative overflow-hidden z-10"
         style={{
           background:
             theme === 'dark'
@@ -162,22 +164,24 @@ function Login({ theme, toggleTheme }) {
         )}
 
         <div className="flex flex-col items-center mb-6 relative z-10">
-          <div className="p-2.5 rounded-full bg-gradient-to-br from-[#2D6A4F] to-[#E76F51] text-white shadow-lg shadow-terracotta/20 dark:shadow-dark-terracotta/20 hover:scale-105 transition-transform duration-300">
-            <Plane className="w-5 h-5" />
-          </div>
+          <img
+            src={LOGO_URL}
+            alt="Wandr"
+            className="h-16 sm:h-20 w-auto object-contain hover:scale-105 transition-transform duration-300"
+          />
           <span className="font-serif text-2xl font-bold text-[#1A1A1A] dark:text-dark-text mt-2">
             Wandr
           </span>
         </div>
 
         <div className="flex items-center justify-center gap-2 mb-1 relative z-10">
-          <Hand className="w-6 h-6 text-terracotta dark:text-dark-terracotta" />
-          <h2 className="text-2xl font-bold text-center text-deep-charcoal dark:text-dark-text">
+          <Hand className="w-5 h-5 sm:w-6 sm:h-6 text-terracotta dark:text-dark-terracotta" />
+          <h2 className="text-xl sm:text-2xl font-bold text-center text-deep-charcoal dark:text-dark-text">
             Welcome back
           </h2>
         </div>
 
-        <p className="text-center text-warm-grey dark:text-dark-text-secondary mt-1 mb-8 relative z-10">
+        <p className="text-center text-xs sm:text-sm text-warm-grey dark:text-dark-text-secondary mt-1 mb-6 sm:mb-8 relative z-10">
           Log in to continue planning your trips
         </p>
 
@@ -195,7 +199,7 @@ function Login({ theme, toggleTheme }) {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
+        <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6 relative z-10">
           <div>
             <label
               htmlFor="email"
@@ -272,7 +276,7 @@ function Login({ theme, toggleTheme }) {
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-[#e8eaed] dark:border-dark-border" />
           </div>
-          <div className="relative flex justify-center text-sm">
+          <div className="relative flex justify-center text-xs sm:text-sm">
             <span className="px-4 bg-transparent text-warm-grey dark:text-dark-text-secondary">
               or continue with
             </span>
@@ -298,7 +302,7 @@ function Login({ theme, toggleTheme }) {
         <div className="mt-4 text-center relative z-10">
           <a
             href="/signup"
-            className="text-terracotta dark:text-dark-terracotta font-medium hover:underline hover:text-terracotta-hover dark:hover:text-[#c47050] transition-colors"
+            className="text-sm text-terracotta dark:text-dark-terracotta font-medium hover:underline hover:text-terracotta-hover dark:hover:text-[#c47050] transition-colors"
           >
             Create an account
           </a>

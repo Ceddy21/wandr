@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { Plane, Eye, EyeOff, Hand, Sun, Moon, Check, X } from 'lucide-react';
+import { Eye, EyeOff, Hand, Sun, Moon, Check, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
+const LOGO_URL = 'https://res.cloudinary.com/sqlrnnth/image/upload/v1789548455/wanderly/receipts/tmlegop3qewoeiaskjur.png';
 
 const PASSWORD_RULES = [
   { key: 'length',  label: 'At least 8 characters',  test: (p) => p.length >= 8 },
@@ -15,11 +17,11 @@ const PASSWORD_RULES = [
 ];
 
 const STRENGTH_LEVELS = [
-  { label: 'Very weak', color: '#dc2626', bg: '#dc2626' }, 
-  { label: 'Weak',      color: '#f97316', bg: '#f97316' },  
-  { label: 'Fair',      color: '#eab308', bg: '#eab308' },  
-  { label: 'Good',      color: '#84cc16', bg: '#84cc16' },  
-  { label: 'Strong',    color: '#16a34a', bg: '#16a34a' },  
+  { label: 'Very weak', color: '#dc2626', bg: '#dc2626' },
+  { label: 'Weak',      color: '#f97316', bg: '#f97316' },
+  { label: 'Fair',      color: '#eab308', bg: '#eab308' },
+  { label: 'Good',      color: '#84cc16', bg: '#84cc16' },
+  { label: 'Strong',    color: '#16a34a', bg: '#16a34a' },
 ];
 
 function Signup({ theme, toggleTheme }) {
@@ -119,7 +121,7 @@ function Signup({ theme, toggleTheme }) {
     confirmPassword.length > 0 && password !== confirmPassword;
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center px-4 transition-colors duration-300 overflow-hidden">
+    <div className="relative min-h-screen flex items-center justify-center px-4 py-8 transition-colors duration-300 overflow-hidden">
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -167,7 +169,7 @@ function Signup({ theme, toggleTheme }) {
       </button>
 
       <div
-        className="w-full max-w-md rounded-2xl p-8 relative overflow-hidden z-10"
+        className="w-full max-w-md rounded-2xl p-6 sm:p-8 relative overflow-hidden z-10"
         style={{
           background: theme === 'dark'
             ? 'rgba(30, 30, 27, 0.7)'
@@ -191,26 +193,28 @@ function Signup({ theme, toggleTheme }) {
         />
 
         <div className="flex flex-col items-center mb-6 relative z-10">
-          <div className="p-2.5 rounded-full bg-gradient-to-br from-[#2D6A4F] to-[#E76F51] text-white shadow-lg shadow-terracotta/20 dark:shadow-dark-terracotta/20 hover:scale-105 transition-transform duration-300">
-            <Plane className="w-5 h-5" />
-          </div>
+          <img
+            src={LOGO_URL}
+            alt="Wandr"
+            className="h-16 sm:h-20 w-auto object-contain hover:scale-105 transition-transform duration-300"
+          />
           <span className="font-serif text-2xl font-bold text-[#1A1A1A] dark:text-dark-text mt-2">
             Wandr
           </span>
         </div>
 
         <div className="flex items-center justify-center gap-2 mb-1 relative z-10">
-          <Hand className="w-6 h-6 text-terracotta dark:text-dark-terracotta" />
-          <h2 className="text-2xl font-bold text-center text-deep-charcoal dark:text-dark-text">
+          <Hand className="w-5 h-5 sm:w-6 sm:h-6 text-terracotta dark:text-dark-terracotta" />
+          <h2 className="text-xl sm:text-2xl font-bold text-center text-deep-charcoal dark:text-dark-text">
             Create an account
           </h2>
         </div>
 
-        <p className="text-center text-warm-grey dark:text-dark-text-secondary mt-1 mb-8 relative z-10">
+        <p className="text-center text-xs sm:text-sm text-warm-grey dark:text-dark-text-secondary mt-1 mb-6 sm:mb-8 relative z-10">
           Start planning your trips with friends.
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
+        <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6 relative z-10">
           {error && (
             <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
               <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
@@ -385,7 +389,7 @@ function Signup({ theme, toggleTheme }) {
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-[#e8eaed] dark:border-dark-border"></div>
           </div>
-          <div className="relative flex justify-center text-sm">
+          <div className="relative flex justify-center text-xs sm:text-sm">
             <span className="px-4 bg-transparent text-warm-grey dark:text-dark-text-secondary">
               or sign up with
             </span>
@@ -409,7 +413,7 @@ function Signup({ theme, toggleTheme }) {
         </button>
 
         <div className="mt-4 text-center relative z-10">
-          <a href="/login" className="text-terracotta dark:text-dark-terracotta font-medium hover:underline hover:text-terracotta-hover dark:hover:text-[#c47050] transition-colors">
+          <a href="/login" className="text-sm text-terracotta dark:text-dark-terracotta font-medium hover:underline hover:text-terracotta-hover dark:hover:text-[#c47050] transition-colors">
             Already have an account? Log in
           </a>
         </div>
