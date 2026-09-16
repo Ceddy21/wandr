@@ -65,15 +65,15 @@ export const useTripMessages = (tripId) => {
     };
   }, [tripId]);
 
-  const sendMessage = async (imageUrl = '') => {
+  const sendMessage = async (imageUrl = '', replyToId = null) => {
     const text = newMessage.trim();
     if (!text && !imageUrl) return { success: false };
 
     try {
-      const created = await tripService.addMessage(tripId, {
-        text,
-        imageUrl,
-      });
+      const payload = { text, imageUrl };
+      if (replyToId) payload.replyTo = replyToId;
+
+      const created = await tripService.addMessage(tripId, payload);
 
       setMessages((prev) => {
         if (prev.some((m) => m._id === created._id)) return prev;

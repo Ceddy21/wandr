@@ -23,9 +23,14 @@ const messageSchema = new mongoose.Schema({
   edited: { type: Boolean, default: false },
   deleted: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now, index: true },
+
+  replyTo: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: 'Message',
+  default: null,
+},
 });
 
-// Optimize lookups by trip + time
 messageSchema.index({ tripId: 1, createdAt: 1 });
 
 export default mongoose.model('Message', messageSchema);

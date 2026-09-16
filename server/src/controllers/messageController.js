@@ -1,7 +1,10 @@
 import Message from '../models/Message.js';
 import Trip from '../models/Trip.js';
 import User from '../models/User.js';
+import mongoose from 'mongoose';
 import { logTripActivity } from '../utils/logTripActivity.js';
+
+const REPLY_POPULATE_FIELDS = 'user text imageUrl deleted userId createdAt';
 
 const verifyTripAccess = async (tripId, userId) => {
   return await Trip.findOne({
@@ -16,6 +19,7 @@ export const getMessages = async (req, res) => {
     if (!trip) return res.status(404).json({ message: 'Trip not found' });
 
     const messages = await Message.find({ tripId: req.params.id })
+      .populate('replyTo', REPLY_POPULATE_FIELDS)
       .sort({ createdAt: 1 })
       .limit(500);
 
@@ -28,7 +32,7 @@ export const getMessages = async (req, res) => {
 
 export const addMessage = async (req, res) => {
   try {
-    const { text, imageUrl } = req.body;
+    const { text, imageUrl, replyTo } = req.body;
 
     if (!text && !imageUrl) {
       return res.status(400).json({ message: 'Text or image is required' });
@@ -36,6 +40,21 @@ export const addMessage = async (req, res) => {
 
     const trip = await verifyTripAccess(req.params.id, req.userId);
     if (!trip) return res.status(404).json({ message: 'Trip not found' });
+
+    let replyToId = null;
+    if (replyTo) {
+      if (!mongoose.Types.ObjectId.isValid(replyTo)) {
+        return res.status(400).json({ message: 'Invalid replyTo id' });
+      }
+      const original = await Message.findOne({
+        _id: replyTo,
+        tripId: req.params.id,
+      }).select('_id');
+      if (!original) {
+        return res.status(400).json({ message: 'Reply target not found' });
+      }
+      replyToId = original._id;
+    }
 
     const sender = await User.findById(req.userId).select('name email');
     const senderName =
@@ -48,9 +67,11 @@ export const addMessage = async (req, res) => {
       text: text || '',
       imageUrl: imageUrl || '',
       status: 'sent',
+      replyTo: replyToId,
     });
 
     await message.save();
+    await message.populate('replyTo', REPLY_POPULATE_FIELDS);
 
     await logTripActivity({
       userId: req.userId,
@@ -96,6 +117,7 @@ export const editMessage = async (req, res) => {
     message.text = text;
     message.edited = true;
     await message.save();
+    await message.populate('replyTo', REPLY_POPULATE_FIELDS);
 
     await logTripActivity({
       userId: req.userId,
@@ -139,6 +161,7 @@ export const deleteMessage = async (req, res) => {
     message.text = '';
     message.imageUrl = '';
     await message.save();
+    await message.populate('replyTo', REPLY_POPULATE_FIELDS);
 
     await logTripActivity({
       userId: req.userId,
@@ -174,6 +197,7 @@ export const markMessagesRead = async (req, res) => {
     );
 
     const messages = await Message.find({ tripId: req.params.id })
+      .populate('replyTo', REPLY_POPULATE_FIELDS)
       .sort({ createdAt: 1 });
 
     const io = req.app.get('io');

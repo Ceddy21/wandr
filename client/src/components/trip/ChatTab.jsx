@@ -6,6 +6,7 @@ import {
   Trash2,
   Pencil,
   Forward,
+  Reply,
   X,
   Loader,
 } from 'lucide-react';
@@ -41,6 +42,14 @@ const validateChatImage = (file) => {
   return null;
 };
 
+const getReplyPreviewText = (msg) => {
+  if (!msg) return '';
+  if (msg.deleted) return 'This message was deleted';
+  if (msg.text && msg.text.trim()) return msg.text;
+  if (msg.imageUrl) return '📷 Image';
+  return '';
+};
+
 function ChatTab({
   currentUserId,
   messages = [],
@@ -53,12 +62,14 @@ function ChatTab({
 }) {
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const inputRef = useRef(null);
   const [openMenuId, setOpenMenuId] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [editText, setEditText] = useState('');
   const [deletingMessage, setDeletingMessage] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
+  const [replyingTo, setReplyingTo] = useState(null);
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -121,8 +132,15 @@ function ChatTab({
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      onSendMessage();
+      handleSend();
     }
+  };
+
+  const handleSend = () => {
+    if (!newMessage.trim()) return;
+    const replyId = replyingTo?._id || null;
+    onSendMessage(undefined, replyId);
+    setReplyingTo(null);
   };
 
   const handleImageUpload = async (e) => {
@@ -139,8 +157,10 @@ function ChatTab({
     setUploading(true);
     try {
       const url = await uploadToCloudinary(file, 'wanderly/chat');
-      await onSendMessage(url);
+      const replyId = replyingTo?._id || null;
+      await onSendMessage(url, replyId);
       toast.success('Image sent!');
+      setReplyingTo(null);
     } catch (err) {
       toast.error(err.message || 'Failed to upload image');
     } finally {
@@ -171,6 +191,12 @@ function ChatTab({
     setOpenMenuId(null);
   };
 
+  const handleReply = (msg) => {
+    setReplyingTo(msg);
+    setOpenMenuId(null);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
   const getUserInitials = (name) => {
     if (!name) return '?';
     const parts = name.trim().split(' ');
@@ -191,6 +217,7 @@ function ChatTab({
           messages.map((message) => {
             const isOwn = isMessageOwn(message);
             const isDeleted = message.deleted;
+            const replyTarget = message.replyTo;
 
             return (
               <div
@@ -217,6 +244,27 @@ function ChatTab({
                       </p>
                     ) : (
                       <>
+                        {replyTarget && (
+                          <div
+                            className={`mb-2 px-2.5 py-1.5 rounded border-l-2 text-xs ${
+                              isOwn
+                                ? 'bg-white/15 border-white/60 text-white/90'
+                                : 'bg-terracotta-soft/60 dark:bg-dark-terracotta-soft/60 border-terracotta dark:border-dark-terracotta text-deep-charcoal dark:text-dark-text'
+                            }`}
+                          >
+                            <p
+                              className={`font-semibold mb-0.5 ${
+                                isOwn ? 'text-white' : 'text-terracotta dark:text-dark-terracotta'
+                              }`}
+                            >
+                              {replyTarget.user || 'Unknown'}
+                            </p>
+                            <p className="truncate opacity-90">
+                              {getReplyPreviewText(replyTarget)}
+                            </p>
+                          </div>
+                        )}
+
                         {message.imageUrl && (
                           <img
                             src={message.imageUrl}
@@ -273,7 +321,7 @@ function ChatTab({
                     </div>
                   )}
 
-                  {!isDeleted && isOwn && (
+                  {!isDeleted && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -281,7 +329,9 @@ function ChatTab({
                           openMenuId === message._id ? null : message._id
                         );
                       }}
-                      className="absolute top-2 -left-8 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-terracotta-soft dark:hover:bg-dark-terracotta-soft"
+                      className={`absolute top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-terracotta-soft dark:hover:bg-dark-terracotta-soft ${
+                        isOwn ? '-left-8' : '-right-8'
+                      }`}
                     >
                       <MoreVertical className="w-4 h-4 text-warm-grey dark:text-dark-text-secondary" />
                     </button>
@@ -289,34 +339,47 @@ function ChatTab({
 
                   {openMenuId === message._id && (
                     <div
-                      className="absolute top-10 left-0 z-20 bg-white dark:bg-dark-card border border-[#e8eaed] dark:border-dark-border rounded-lg shadow-lg overflow-hidden min-w-[120px]"
+                      className={`absolute top-10 z-20 bg-white dark:bg-dark-card border border-[#e8eaed] dark:border-dark-border rounded-lg shadow-lg overflow-hidden min-w-[130px] ${
+                        isOwn ? 'left-0' : 'right-0'
+                      }`}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
-                        onClick={() => {
-                          setEditingMessage(message);
-                          setEditText(message.text);
-                          setOpenMenuId(null);
-                        }}
+                        onClick={() => handleReply(message)}
                         className="w-full px-3 py-2 text-left text-sm text-deep-charcoal dark:text-dark-text hover:bg-terracotta-soft dark:hover:bg-dark-terracotta-soft flex items-center gap-2"
                       >
-                        <Pencil className="w-3.5 h-3.5" /> Edit
+                        <Reply className="w-3.5 h-3.5" /> Reply
                       </button>
-                      <button
-                        onClick={() => handleForward(message)}
-                        className="w-full px-3 py-2 text-left text-sm text-deep-charcoal dark:text-dark-text hover:bg-terracotta-soft dark:hover:bg-dark-terracotta-soft flex items-center gap-2"
-                      >
-                        <Forward className="w-3.5 h-3.5" /> Forward
-                      </button>
-                      <button
-                        onClick={() => {
-                          setDeletingMessage(message);
-                          setOpenMenuId(null);
-                        }}
-                        className="w-full px-3 py-2 text-left text-sm text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20 flex items-center gap-2"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" /> Delete
-                      </button>
+
+                      {isOwn && (
+                        <>
+                          <button
+                            onClick={() => {
+                              setEditingMessage(message);
+                              setEditText(message.text || '');
+                              setOpenMenuId(null);
+                            }}
+                            className="w-full px-3 py-2 text-left text-sm text-deep-charcoal dark:text-dark-text hover:bg-terracotta-soft dark:hover:bg-dark-terracotta-soft flex items-center gap-2"
+                          >
+                            <Pencil className="w-3.5 h-3.5" /> Edit
+                          </button>
+                          <button
+                            onClick={() => handleForward(message)}
+                            className="w-full px-3 py-2 text-left text-sm text-deep-charcoal dark:text-dark-text hover:bg-terracotta-soft dark:hover:bg-dark-terracotta-soft flex items-center gap-2"
+                          >
+                            <Forward className="w-3.5 h-3.5" /> Forward
+                          </button>
+                          <button
+                            onClick={() => {
+                              setDeletingMessage(message);
+                              setOpenMenuId(null);
+                            }}
+                            className="w-full px-3 py-2 text-left text-sm text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20 flex items-center gap-2"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Delete
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -326,6 +389,26 @@ function ChatTab({
         )}
         <div ref={messagesEndRef} />
       </div>
+
+      {replyingTo && (
+        <div className="flex items-start gap-3 mb-3 px-3 py-2 bg-terracotta-soft/60 dark:bg-dark-terracotta-soft/60 border-l-4 border-terracotta dark:border-dark-terracotta rounded-md">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-terracotta dark:text-dark-terracotta mb-0.5">
+              Replying to {replyingTo.user || 'member'}
+            </p>
+            <p className="text-xs text-deep-charcoal dark:text-dark-text truncate opacity-80">
+              {getReplyPreviewText(replyingTo)}
+            </p>
+          </div>
+          <button
+            onClick={() => setReplyingTo(null)}
+            className="p-1 rounded-full hover:bg-white/40 dark:hover:bg-dark-card/40 transition-colors flex-shrink-0"
+            aria-label="Cancel reply"
+          >
+            <X className="w-4 h-4 text-warm-grey dark:text-dark-text-secondary" />
+          </button>
+        </div>
+      )}
 
       <div className="flex items-center gap-2 border-t border-[#e8eaed] dark:border-dark-border pt-4">
         <button
@@ -350,8 +433,9 @@ function ChatTab({
         />
 
         <input
+          ref={inputRef}
           type="text"
-          placeholder="Type a message..."
+          placeholder={replyingTo ? 'Type your reply...' : 'Type a message...'}
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           onKeyDown={handleKeyPress}
@@ -359,7 +443,7 @@ function ChatTab({
         />
 
         <button
-          onClick={() => onSendMessage()}
+          onClick={handleSend}
           disabled={!newMessage.trim() || uploading}
           className="p-2.5 rounded-lg bg-terracotta dark:bg-dark-terracotta text-white hover:bg-terracotta-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           title="Send"
