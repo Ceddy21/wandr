@@ -315,7 +315,8 @@ io.use(async (socket, next) => {
 
 io.on('connection', (socket) => {
   console.log(`Socket connected: ${socket.id} (user: ${socket.userId})`);
-
+  
+  socket.join(`user:${socket.userId}`);
   socket.on('join-trip', async (tripId) => {
     if (!tripId) return;
 

@@ -4,6 +4,30 @@ import crypto from 'crypto';
 import User from '../models/User.js';
 import { logTripActivity } from '../utils/logTripActivity.js';
 
+const notifyTripChange = (io, trip, excludeUserId = null) => {
+  if (!io || !trip) return;
+
+  const memberIds = new Set();
+
+  if (trip.userId) {
+    memberIds.add(trip.userId.toString());
+  }
+
+  if (Array.isArray(trip.members)) {
+    trip.members.forEach((m) => {
+      const id = m._id ? m._id.toString() : m.toString();
+      memberIds.add(id);
+    });
+  }
+
+  memberIds.forEach((id) => {
+    if (excludeUserId && id === excludeUserId.toString()) return;
+    io.to(`user:${id}`).emit('trips-changed', {
+      tripId: trip._id.toString(),
+    });
+  });
+};
+
 const findMemberTrip = (tripId, userId) =>
   Trip.findOne({
     _id: tripId,
@@ -93,6 +117,8 @@ export const createTrip = async (req, res) => {
       tripName: trip.name,
     });
 
+    notifyTripChange(req.app.get('io'), trip, req.userId);
+
     res.status(201).json(trip);
   } catch (error) {
     console.error('Create trip error:', error);
@@ -145,6 +171,8 @@ export const updateTrip = async (req, res) => {
       tripName: trip.name,
     });
 
+    notifyTripChange(req.app.get('io'), trip, req.userId);
+
     res.json(trip);
   } catch (error) {
     console.error('Update trip error:', error);
@@ -159,7 +187,17 @@ export const deleteTrip = async (req, res) => {
       return res.status(404).json({ message: 'Trip not found or you are not the owner' });
     }
 
+    const io = req.app.get('io');
+    const snapshot = {
+      _id: trip._id,
+      userId: trip.userId,
+      members: trip.members,
+    };
+
     await trip.deleteOne();
+
+    notifyTripChange(io, snapshot, null);
+
     res.json({ message: 'Trip deleted successfully' });
   } catch (error) {
     console.error('Delete trip error:', error);
@@ -176,6 +214,7 @@ export const archiveTrip = async (req, res) => {
 
     trip.status = 'archived';
     await trip.save();
+    await trip.populate('members', 'name email avatar');
 
     await logTripActivity({
       userId: req.userId,
@@ -185,6 +224,8 @@ export const archiveTrip = async (req, res) => {
       targetId: trip._id,
       tripName: trip.name,
     });
+
+    notifyTripChange(req.app.get('io'), trip, req.userId);
 
     res.json(trip);
   } catch (error) {
@@ -212,6 +253,8 @@ export const unarchiveTrip = async (req, res) => {
       targetId: trip._id,
       tripName: trip.name,
     });
+
+    notifyTripChange(req.app.get('io'), trip, req.userId);
 
     res.json(trip);
   } catch (error) {
@@ -249,6 +292,8 @@ export const addMember = async (req, res) => {
         targetId: userId,
         tripName: trip.name,
       });
+
+      notifyTripChange(req.app.get('io'), trip, req.userId);
     }
 
     res.json(trip);
@@ -288,6 +333,12 @@ export const removeMember = async (req, res) => {
         tripName: trip.name,
       });
     }
+
+    const io = req.app.get('io');
+    io?.to(`user:${userId}`).emit('trips-changed', {
+      tripId: trip._id.toString(),
+    });
+    notifyTripChange(io, trip, req.userId);
 
     res.json(trip);
   } catch (error) {
@@ -358,6 +409,8 @@ export const joinTripByCode = async (req, res) => {
       targetId: req.userId,
       tripName: trip.name,
     });
+
+    notifyTripChange(req.app.get('io'), trip, null);
 
     res.json({ message: 'Joined trip', tripId: trip._id });
   } catch (error) {

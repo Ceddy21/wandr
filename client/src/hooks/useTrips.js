@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { tripService } from '../services/tripService';
+import { getSocket, connectSocket } from '../services/socketService';
 
 export const useTrips = () => {
   const [trips, setTrips] = useState([]);
@@ -79,6 +80,31 @@ export const useTrips = () => {
     fetchTrips();
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+    let socketInstance = null;
+
+    const setup = async () => {
+      socketInstance = await connectSocket();
+      if (!mounted || !socketInstance) return;
+
+      const handleTripsChanged = () => {
+        fetchTrips();
+      };
+
+      socketInstance.on('trips-changed', handleTripsChanged);
+    };
+
+    setup();
+
+    return () => {
+      mounted = false;
+      if (socketInstance) {
+        socketInstance.off('trips-changed');
+      }
+    };
+  }, []);
+
   return {
     trips,
     loading,
@@ -87,6 +113,6 @@ export const useTrips = () => {
     createTrip,
     deleteTrip,
     archiveTrip,
-    unarchiveTrip,     
+    unarchiveTrip,
   };
 };
