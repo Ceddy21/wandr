@@ -17,15 +17,15 @@ import NotificationBell from './NotificationBell';
 const LOGO_URL = 'https://res.cloudinary.com/sqlrnnth/image/upload/w_320,h_320,c_fit,q_auto,f_auto/v1789228245/wandr_nologo.png';
 
 const LOGO_SIZE = {
-  mobile: 64,  
-  tablet: 72,   
-  desktop: 80,  
+  mobile: 64,
+  tablet: 72,
+  desktop: 80,
 };
 
 const TEXT_SIZE = {
-  mobile: 'text-2xl',  
-  tablet: 'text-3xl',   
-  desktop: 'text-3xl',  
+  mobile: 'text-2xl',
+  tablet: 'text-3xl',
+  desktop: 'text-3xl',
 };
 
 function Header({ theme, toggleTheme }) {
@@ -145,7 +145,7 @@ function Header({ theme, toggleTheme }) {
             width={LOGO_SIZE.desktop}
             height={LOGO_SIZE.desktop}
             style={{
-              height: 'clamp(48px, 5vw, 64px)', 
+              height: 'clamp(48px, 5vw, 64px)',
               width: 'auto',
             }}
             className="object-contain"
@@ -233,7 +233,7 @@ function Header({ theme, toggleTheme }) {
 
           <button
             onClick={toggleTheme}
-            className="ml-1 p-2 rounded-lg bg-[#F0F2F5] dark:bg-dark-card/50 text-[#4A4A4A] dark:text-dark-text-secondary hover:bg-[#E8EAED] dark:hover:bg-dark-card transition-all duration-200 hover:scale-105"
+            className="hidden md:flex ml-1 p-2 rounded-lg bg-[#F0F2F5] dark:bg-dark-card/50 text-[#4A4A4A] dark:text-dark-text-secondary hover:bg-[#E8EAED] dark:hover:bg-dark-card transition-all duration-200 hover:scale-105"
             aria-label="Toggle Theme"
           >
             {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
