@@ -145,7 +145,7 @@ function Dashboard() {
   if (error) return <DashboardError error={error} />;
 
   const btnBase =
-    'inline-flex items-center justify-center gap-2 px-4 h-10 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap';
+    'inline-flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 h-9 sm:h-10 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0';
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 lg:px-20 py-8 sm:py-12">
@@ -155,7 +155,7 @@ function Dashboard() {
       <TripStats stats={stats} />
       <NextTrip trip={nextTrip} />
 
-      <div className="flex flex-wrap items-center gap-3 mb-6">
+      <div className="flex items-center gap-2 sm:gap-3 mb-6">
         <button
           type="button"
           onClick={handleCreateTrip}
