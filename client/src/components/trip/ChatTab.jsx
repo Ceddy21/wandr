@@ -50,6 +50,37 @@ const getReplyPreviewText = (msg) => {
   return '';
 };
 
+const getInitials = (name) => {
+  if (!name) return '?';
+  const parts = name.trim().split(' ').filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return name.charAt(0).toUpperCase();
+};
+
+const SeenBadge = ({ user }) => {
+  if (!user) return null;
+  const hasAvatar = user.avatar && typeof user.avatar === 'string';
+
+  return (
+    <div
+      className="w-4 h-4 rounded-full bg-terracotta-soft dark:bg-dark-terracotta-soft flex items-center justify-center text-[7px] font-medium text-deep-charcoal dark:text-dark-text border border-white dark:border-dark-card overflow-hidden flex-shrink-0"
+      title={`Seen by ${user.name || 'member'}`}
+    >
+      {hasAvatar ? (
+        <img
+          src={user.avatar}
+          alt={user.name || 'User'}
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        <span>{getInitials(user.name)}</span>
+      )}
+    </div>
+  );
+};
+
 function ChatTab({
   currentUserId,
   messages = [],
@@ -105,6 +136,15 @@ function ChatTab({
   const isMessageOwn = (message) => {
     if (!currentUserId || !message.userId) return false;
     return message.userId.toString() === currentUserId.toString();
+  };
+
+  const getSeenBy = (message) => {
+    if (!Array.isArray(message.readBy)) return [];
+    const senderId = message.userId?.toString();
+    return message.readBy.filter((u) => {
+      const uid = (u._id || u).toString();
+      return uid !== senderId;
+    });
   };
 
   const formatMessageTime = (dateStr) => {
@@ -197,14 +237,7 @@ function ChatTab({
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
-  const getUserInitials = (name) => {
-    if (!name) return '?';
-    const parts = name.trim().split(' ');
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return name.charAt(0).toUpperCase();
-  };
+  const getUserInitials = (name) => getInitials(name);
 
   return (
     <div className="flex flex-col h-[500px]">
@@ -218,6 +251,7 @@ function ChatTab({
             const isOwn = isMessageOwn(message);
             const isDeleted = message.deleted;
             const replyTarget = message.replyTo;
+            const seenBy = getSeenBy(message);
 
             return (
               <div
@@ -318,6 +352,24 @@ function ChatTab({
                       <span className="text-[10px] text-warm-grey dark:text-dark-text-secondary">
                         {message.user}
                       </span>
+                    </div>
+                  )}
+
+                  {isOwn && !isDeleted && seenBy.length > 0 && (
+                    <div className="flex items-center gap-1 mt-1 mr-1 justify-end">
+                      <span className="text-[9px] text-warm-grey dark:text-dark-text-secondary mr-0.5">
+                        Seen by
+                      </span>
+                      <div className="flex -space-x-1.5">
+                        {seenBy.slice(0, 3).map((user) => (
+                          <SeenBadge key={user._id || user} user={user} />
+                        ))}
+                        {seenBy.length > 3 && (
+                          <div className="w-4 h-4 rounded-full bg-[#e8eaed] dark:bg-dark-border flex items-center justify-center text-[7px] font-medium text-warm-grey dark:text-dark-text-secondary border border-white dark:border-dark-card">
+                            +{seenBy.length - 3}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 

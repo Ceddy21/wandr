@@ -25,10 +25,14 @@ const messageSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now, index: true },
 
   replyTo: {
-  type: mongoose.Schema.Types.ObjectId,
-  ref: 'Message',
-  default: null,
-},
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Message',
+    default: null,
+  },
+  readBy: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  }],
 });
 
 messageSchema.index({ tripId: 1, createdAt: 1 });

@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import { logTripActivity } from '../utils/logTripActivity.js';
 
 const REPLY_POPULATE_FIELDS = 'user text imageUrl deleted userId createdAt';
+const READ_BY_POPULATE_FIELDS = 'name avatar';
 
 const verifyTripAccess = async (tripId, userId) => {
   return await Trip.findOne({
@@ -20,6 +21,7 @@ export const getMessages = async (req, res) => {
 
     const messages = await Message.find({ tripId: req.params.id })
       .populate('replyTo', REPLY_POPULATE_FIELDS)
+      .populate('readBy', READ_BY_POPULATE_FIELDS)
       .sort({ createdAt: 1 })
       .limit(500);
 
@@ -72,6 +74,7 @@ export const addMessage = async (req, res) => {
 
     await message.save();
     await message.populate('replyTo', REPLY_POPULATE_FIELDS);
+    await message.populate('readBy', READ_BY_POPULATE_FIELDS);
 
     await logTripActivity({
       userId: req.userId,
@@ -118,6 +121,7 @@ export const editMessage = async (req, res) => {
     message.edited = true;
     await message.save();
     await message.populate('replyTo', REPLY_POPULATE_FIELDS);
+    await message.populate('readBy', READ_BY_POPULATE_FIELDS);
 
     await logTripActivity({
       userId: req.userId,
@@ -162,6 +166,7 @@ export const deleteMessage = async (req, res) => {
     message.imageUrl = '';
     await message.save();
     await message.populate('replyTo', REPLY_POPULATE_FIELDS);
+    await message.populate('readBy', READ_BY_POPULATE_FIELDS);
 
     await logTripActivity({
       userId: req.userId,
@@ -191,13 +196,17 @@ export const markMessagesRead = async (req, res) => {
       {
         tripId: req.params.id,
         userId: { $ne: req.userId },
-        status: { $ne: 'read' },
+        readBy: { $ne: req.userId },
       },
-      { $set: { status: 'read' } }
+      {
+        $addToSet: { readBy: req.userId },
+        $set: { status: 'read' },
+      }
     );
 
     const messages = await Message.find({ tripId: req.params.id })
       .populate('replyTo', REPLY_POPULATE_FIELDS)
+      .populate('readBy', READ_BY_POPULATE_FIELDS)
       .sort({ createdAt: 1 });
 
     const io = req.app.get('io');
