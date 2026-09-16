@@ -1,8 +1,10 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 export const tripService = {
   getAll: async () => {
     const response = await fetch(`${API_BASE_URL}/api/trips`, {
       credentials: 'include',
+      cache: 'no-store',
     });
     if (!response.ok) throw new Error('Failed to fetch trips');
     return response.json();
@@ -11,6 +13,7 @@ export const tripService = {
   getById: async (id) => {
     const response = await fetch(`${API_BASE_URL}/api/trips/${id}`, {
       credentials: 'include',
+      cache: 'no-store',
     });
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
@@ -72,6 +75,7 @@ export const tripService = {
   getItinerary: async (tripId) => {
     const response = await fetch(`${API_BASE_URL}/api/trips/${tripId}/itinerary`, {
       credentials: 'include',
+      cache: 'no-store',
     });
     if (!response.ok) {
       const err = await response.json();
@@ -129,6 +133,7 @@ export const tripService = {
   getExpenses: async (tripId) => {
     const response = await fetch(`${API_BASE_URL}/api/trips/${tripId}/expenses`, {
       credentials: 'include',
+      cache: 'no-store',
     });
     if (!response.ok) {
       const err = await response.json();
@@ -186,6 +191,7 @@ export const tripService = {
   getMessages: async (tripId) => {
     const response = await fetch(`${API_BASE_URL}/api/trips/${tripId}/messages`, {
       credentials: 'include',
+      cache: 'no-store',
     });
     if (!response.ok) {
       const err = await response.json();
@@ -252,6 +258,7 @@ export const tripService = {
   getPolls: async (tripId) => {
     const response = await fetch(`${API_BASE_URL}/api/trips/${tripId}/polls`, {
       credentials: 'include',
+      cache: 'no-store',
     });
     if (!response.ok) {
       const err = await response.json();
@@ -271,7 +278,7 @@ export const tripService = {
       const err = await response.json();
       throw new Error(err.message || 'Failed to create poll');
     }
-    return response.json(); 
+    return response.json();
   },
 
   deletePoll: async (tripId, pollId) => {

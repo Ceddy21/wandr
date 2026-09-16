@@ -92,7 +92,12 @@ export const useTrips = () => {
         fetchTrips();
       };
 
+      const handleRemovedFromTrip = () => {
+        fetchTrips();
+      };
+
       socketInstance.on('trips-changed', handleTripsChanged);
+      socketInstance.on('removed-from-trip', handleRemovedFromTrip);
     };
 
     setup();
@@ -101,6 +106,7 @@ export const useTrips = () => {
       mounted = false;
       if (socketInstance) {
         socketInstance.off('trips-changed');
+        socketInstance.off('removed-from-trip');
       }
     };
   }, []);
