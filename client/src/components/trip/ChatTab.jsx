@@ -355,8 +355,12 @@ function ChatTab({
                     </div>
                   )}
 
-                  {isOwn && !isDeleted && seenBy.length > 0 && (
-                    <div className="flex items-center gap-1 mt-1 mr-1 justify-end">
+                  {!isDeleted && seenBy.length > 0 && (
+                    <div
+                      className={`flex items-center gap-1 mt-1 ${
+                        isOwn ? 'justify-end mr-1' : 'justify-start ml-1'
+                      }`}
+                    >
                       <span className="text-[9px] text-warm-grey dark:text-dark-text-secondary mr-0.5">
                         Seen by
                       </span>
